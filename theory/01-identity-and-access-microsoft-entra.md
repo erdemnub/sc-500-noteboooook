@@ -270,4 +270,6 @@ Break-glass accounts are excluded from JIT not because they're exempt from gover
 **Break-glass accounts must never be used for routine tasks. Any activation should trigger an immediate investigation to determine whether the use was authorized and whether underlying access gaps need to be addressed.**
 
 
+<img width="511" height="856" alt="image" src="https://github.com/user-attachments/assets/285eb0c8-f705-4566-b6ad-d90721cdc087" />
+
 
