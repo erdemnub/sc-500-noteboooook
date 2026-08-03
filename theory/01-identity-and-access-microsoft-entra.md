@@ -170,6 +170,51 @@ From your perspective, activation is the step that converts an eligible assignme
 > <img width="573" height="381" alt="image" src="https://github.com/user-attachments/assets/794d4331-0dcc-482a-bbd3-8b2989c187a8" />
 
 <img width="865" height="256" alt="image" src="https://github.com/user-attachments/assets/bb7f05ab-0089-4ea9-85fc-6c1e1f69d3b4" />
->To reach the settings for a specific role, navigate to PIM > Microsoft Entra roles, select the role, select Role settings, and select Edit.
 
+>To reach the settings for a specific role, navigate to PIM > Microsoft Entra roles, select the role, select Role settings, and select Edit.
+---
+### Understand the Azure resource scope in Privileged Identity Management (PIM)
+Azure RBAC operates across a nested scope hierarchy: management group, subscription, resource group, and individual resource. Assignments at a broader scope inherit downward. An Owner assignment at the subscription level grants ownership over every resource group and resource within it. PIM surfaces this same hierarchy, letting you make a user eligible at the subscription, resource group, or individual resource level.
+
+ ID Governance > Privileged Identity Management > Azure resources. Here, you're managing RBAC assignments on Azure control-plane objects
+
+ **The updated PIM experience uses the latest Azure Resource Manager API and automatically surfaces Azure resources in your tenant—no manual onboarding step is required. The table summarizes the key operational differences between the two planes.**
+
+<img width="319" height="304" alt="image" src="https://github.com/user-attachments/assets/7d8cf665-bdd2-4def-a401-6397773e5a39" />
+Not every Azure resource carries the same risk from a compromised Owner or Contributor. The right activation controls depend on four factors: data sensitivity, blast radius, regulatory exposure, and the reversibility of any damage. A misconfigured dev/test resource group is annoying and recoverable. 
+
+
+
+### Risk tier Resource examples	Risk reason	Recommended activation controls
+
+Critical	
+---
+>Production subscription, Key Vault, Azure AI services	Compromise grants broad lateral movement; Key Vault secrets unlock downstream systems; AI model weights and training data represent exfiltratable IP	multifactor authentication (MFA) required, justification required, approval required, 1–2 hour max
+---
+High
+>Production resource group, Azure SQL, Azure Kubernetes Service	Narrower scope but high data sensitivity or service continuity risk	MFA required, justification required, approval optional, 4–8 hour max
+---
+Standard	
+>Dev/test resource groups, sandbox subscriptions	Low data sensitivity; mistakes are reversible	MFA required, justification required, no approval, up to 8 hours
+
+To activate an eligible Azure resource role, navigate to My roles in PIM, select the Azure resources tab to see your eligible assignments, and select Activate—the activation steps follow the same flow as Microsoft Entra roles.
+
+**One important nuance: you configure role settings for Azure resource roles independently per role per resource scope. The same Contributor role can have different activation controls at the subscription level versus the resource-group level. This flexibility lets you apply stricter requirements—shorter duration, mandatory approval—on production scopes while keeping lower-friction settings for development scopes.**
+
+How PIM work for groups? 
+
+
+Privileged Identity Management (PIM) for Groups shifts the eligible resource from a role to a group membership. Instead of making each engineer eligible for the Key Vault Contributor role directly, you create a group, assign that group the Key Vault Contributor role, and make each engineer eligible for membership in that group.
+
+For groups that govern access to sensitive resources, using a role-assignable group is a security best practice. A standard Microsoft Entra ID group is modified by its owners, or by lower-privileged administrators such as a Groups Administrator, without triggering an approval or audit entry in PIM. A role-assignable group raises the privilege bar—membership changes require at least a Privileged Role Administrator—reducing the risk that someone bypasses your PIM workflow by modifying the group directly.
+
+Within PIM for Groups, you make a principal eligible as a Member—granting them the group's assigned roles—or as an Owner, which confers control over the group itself. Most JIT scenarios use Member eligibility.
+
+
+Why group-based JIT enforces policy more consistently ? 
+
+here is why:
+
+
+<img width="820" height="381" alt="image" src="https://github.com/user-attachments/assets/ac1f70b5-70af-4578-a4d7-b4dd557fcb5c" />
 
