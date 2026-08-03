@@ -147,9 +147,29 @@ This change converts standing access to a JIT entitlement—the role now appears
 
 <img width="1036" height="222" alt="image" src="https://github.com/user-attachments/assets/d60916a7-f916-4ae5-8258-caac550194a6" />
 
+Activate an eligible Microsoft Entra role
+From your perspective, activation is the step that converts an eligible assignment into a live, time-limited session. That session grants the role's full permissions for the duration you specify, capped by the maximum set in role settings.
+
+1.In PIM, select My roles > Eligible assignments.
+
+2.Find the role and select Activate.
+
+3.Set the activation duration (within the maximum configured in role settings).
+
+4.Enter a justification describing the task requiring elevated access.
+
+5.If approval is required, submit the request and wait for approver action.
+
+6.Confirm the role appears under Active assignments with a duration countdown.
 
 
-<img width="429" height="155" alt="image" src="https://github.com/user-attachments/assets/5f90ad0b-b7a2-4ef7-a193-1c468d1831c5" />
 
+ ### Role settings
+**Role Settings are the per-role configuration in PIM that governs the conditions any eligible user must satisfy before PIM grants access to that role. For example, settings determine whether MFA verification is enforced, whether the user must enter a justification, whether an approver must authorize the request, and how long an activation can last.**
+
+> <img width="573" height="381" alt="image" src="https://github.com/user-attachments/assets/794d4331-0dcc-482a-bbd3-8b2989c187a8" />
+
+<img width="865" height="256" alt="image" src="https://github.com/user-attachments/assets/bb7f05ab-0089-4ea9-85fc-6c1e1f69d3b4" />
+>To reach the settings for a specific role, navigate to PIM > Microsoft Entra roles, select the role, select Role settings, and select Edit.
 
 
