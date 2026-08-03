@@ -270,6 +270,12 @@ Break-glass accounts are excluded from JIT not because they're exempt from gover
 **Break-glass accounts must never be used for routine tasks. Any activation should trigger an immediate investigation to determine whether the use was authorized and whether underlying access gaps need to be addressed.**
 
 
-<img width="511" height="856" alt="image" src="https://github.com/user-attachments/assets/285eb0c8-f705-4566-b6ad-d90721cdc087" />
+
+
+Microsoft Entra roles—you protected the identity plane by assigning eligible access to high-blast-radius roles and configuring activation controls aligned to the risk each role carries.
+Azure resource roles—you protected the resource plane using PIM's scope hierarchy, applying eligible assignments at the subscription, resource group, and individual resource level based on a risk-tier model.
+PIM for Groups—you replaced per-user assignment sprawl with group-based assignments, enforcing a single activation policy across an entire team and reducing both configuration drift and audit surface.
+AI workloads and applications—you extended the same human-access model to AI control planes, and drew the architectural boundary between PIM-governed human engineers and RBAC-governed workload identities.
+Design patterns—you connected the individual controls into a coherent privileged access strategy using five decision patterns, from eligible by default to the break-glass exception.
 
 
