@@ -259,3 +259,15 @@ No. The managed identity can't complete PIM's interactive activation flow. Assig
 The two-track model is clear in isolation, but applying it consistently across an organization—with mixed teams, shared AI services, and evolving workload patterns—requires explicit design decisions. Unit 8 examines the principles that connect all the patterns covered in this module into a coherent privileged access strategy.
 
 
+### JIT design patterns and best practices
+Knowing how each control works isn't the same as knowing which ones to reach for. Across Microsoft Entra roles, Azure resource roles, groups, and AI workloads, the same underlying question recurs: what level of friction, scope, and duration is right for this workload, at this risk level, for this team?
+
+---
+
+###The break-glass exception
+Break-glass accounts are excluded from JIT not because they're exempt from governance, but because PIM's activation path—which depends on multifactor authentication (MFA), approver availability, and service health—can itself fail during the outage conditions that require emergency access. When the identity platform is partially degraded, the last thing you need is access gated behind a service that isn't responding. The governance model shifts accordingly: instead of time-limited activation, the controls become zero normal use, maximum alerting, and a documented break-glass procedure that is rehearsed and audited on a fixed schedule.
+
+**Break-glass accounts must never be used for routine tasks. Any activation should trigger an immediate investigation to determine whether the use was authorized and whether underlying access gaps need to be addressed.**
+
+
+
