@@ -111,3 +111,45 @@ eligible assignment
 PIM also supports access reviews, a periodic process to validate that eligible assignments are still appropriate. At regular intervals, designated reviewers examine each eligible assignment and confirm or deny whether it should continue.
 
  # Implement just-in-time access for Microsoft Entra roles
+
+
+### PIM requires a Microsoft Entra ID P2 or Microsoft Entra ID Governance license for each user whose access it manages.
+
+
+
+Global Administrator	
+Privileged Role Administrator	
+Security Administrator	
+Exchange Administrator	
+Application Administrator
+Authentication Policy Administrator	
+
+
+Assign eligible access to a Microsoft Entra role
+When you assign a user to a role as eligible, you convert them from always holding the role to holding only the entitlement. The role grants no active permissions until the user initiates an activation. The procedure makes that conversion for any Microsoft Entra ID role in PIM.
+
+1.Sign in to the Microsoft Entra admin center and open ID Governance > Privileged Identity Management.
+
+2.Under Manage, select Microsoft Entra roles.
+
+3.Select the target role—for example, Exchange Administrator.
+
+4.Select Assignments > Add assignments.
+
+5.Set Assignment type to Eligible.
+
+6.Select the member and set the assignment duration (permanent or time-bound).
+
+7.Select Assign to complete the assignment.
+
+This change converts standing access to a JIT entitlement—the role now appears in the user's eligible assignments but grants no active privileges until they complete an activation.
+
+
+<img width="1036" height="222" alt="image" src="https://github.com/user-attachments/assets/d60916a7-f916-4ae5-8258-caac550194a6" />
+
+
+
+<img width="429" height="155" alt="image" src="https://github.com/user-attachments/assets/5f90ad0b-b7a2-4ef7-a193-1c468d1831c5" />
+
+
+
