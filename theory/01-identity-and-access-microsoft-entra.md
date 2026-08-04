@@ -278,4 +278,39 @@ PIM for Groups—you replaced per-user assignment sprawl with group-based assign
 AI workloads and applications—you extended the same human-access model to AI control planes, and drew the architectural boundary between PIM-governed human engineers and RBAC-governed workload identities.
 Design patterns—you connected the individual controls into a coherent privileged access strategy using five decision patterns, from eligible by default to the break-glass exception.
 
+---
 
+### API PLUGIN
+
+An API key is a secret value that you should never share publicly. When you build an API plugin that integrates with an API secured with an API key, you store the API key in a secure storage location in Microsoft 365, also known as vault. Then, in your app, you reference the ID of the vault entry. At runtime, declarative agent loads your plugin (2) and resolves the entry ID to the actual API key (3a) which it uses to call the API (3b). The following diagram illustrates this process.
+
+<img width="4028" height="2333" alt="image" src="https://github.com/user-attachments/assets/df35c6e1-a3ca-437f-a9ed-0da3ef3db293" />
+
+```bash
+GET https://api.contoso.com/orders
+Authorization: Bearer API_KEY
+```
+
+<img width="1262" height="1430" alt="image" src="https://github.com/user-attachments/assets/f3297fd3-6252-4559-81cb-d7205efd6813" />
+
+<img width="926" height="767" alt="image" src="https://github.com/user-attachments/assets/005c099a-f815-4f0e-8ff7-a0257cf8b63a" />
+
+<img width="684" height="466" alt="image" src="https://github.com/user-attachments/assets/0fb2f59c-8540-459b-8fb3-47c9f19089db" />
+
+# Register API KEY
+- uses: apiKey/register
+  with:
+    # Name of the API Key
+    name: apiKey
+    # Value of the API Key
+    primaryClientSecret: ${{SECRET_API_KEY}}
+    # Teams app ID
+    appId: ${{TEAMS_APP_ID}}
+    # Path to OpenAPI description document
+    apiSpecPath: ./appPackage/apiSpecificationFile/repair.yml
+  # Write the registration information of API Key into environment file for
+  # the specified environment variable(s).
+  writeToEnvironmentFile:
+    registrationId: APIKEY_REGISTRATION_ID
+
+  The task takes the value of the SECRET_API_KEY project variable, stored in the env/.env.local.user file and registers it in the vault. Then, it takes the vault entry ID and writes it to the environment file env/.env.local. The outcome of this task is an environment variable named APIKEY_REGISTRATION_ID. Microsoft 365 Agents Toolkit writes the value of this variable to the appPackages/ai-plugin.json file that contains the plugin definition. At runtime, the declarative agent that loads the API plugin, uses this ID to retrieve the API key from the vault, and call the API securely.
