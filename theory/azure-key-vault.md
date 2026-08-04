@@ -16,5 +16,26 @@ Network protection Public network access defaults to enabled on new vaults, whic
 Okay well, How we should create a az keyvault? 
 
 ```bash
-az keyvault create --name <vault-name> --resource-group <resource-group> --location <location> --sku premium --retention-days 90 --enable-purge-protection true
+az keyvault create --name <vault-name> --resource-group <resource-group> --location <location> --sku <premium-standart> --retention-days 90 --enable-purge-protection true
 ```
+Soft delete is always on for new vaults and can't be disabled. --retention-days sets the retention window; --enable-purge-protection locks against permanent deletion and has no off switch after creation.
+
+Azure Policy provides two built-in policies that address required settings directly:
+
+-Key vaults should have soft delete enabled 
+-Key vaults should have deletion protection enabled 
+
+
+
+
+<img width="1305" height="785" alt="image" src="https://github.com/user-attachments/assets/f731691b-76e2-4868-b8bc-013886f54aba" />
+in cli :
+```bash
+az policy assignment create --name <value-name> --scope "/subscriptions/$(az account show --query id -o tsv)" --policy "" --params '{"effect": {"value": "Deny"}}'
+```
+more information :
+https://learn.microsoft.com/en-us/azure/key-vault/policy-reference
+
+
+
+
