@@ -94,4 +94,70 @@ I'll introduction to firewall management with az cli
 az keyvault network-rule add --name <'keyvault-name'> --resource-group <'resource-group-name'> --ip-adress <'ip-adrress-or-cidr'>
 ```
 
+another note : 
+
+**Firewall rules apply only to data plane operations—reading secrets, keys, and certificates. Control plane operations (creating or configuring the vault via ARM template) aren't subject to firewall restrictions. Also, private IP address ranges (RFC 1918: 10.x, 172.16–31.x, 192.168.x) can't be used in IP allow list rules**
+
+
+Route virtual network traffic over the Azure backbone (Azure Microsoft’s global wide area network (WAN) using service endpoints
+Virtual network service endpoints give workloads inside an Azure virtual network a more structured alternative to IP-based rules. When you enable the <'Microsoft.KeyVault'> service endpoint on a virtual network subnet and add that subnet to your Key Vault network rules, traffic from that subnet travels over the Azure backbone network rather than the public internet.
+
+to addining :
+```bash
+az network vnet subnet update \
+  --resource-group "<rg-name>" \
+  --vnet-name "<vnet-name>" \
+  --name "<subnet-name>" \
+  --service-endpoints "Microsoft.KeyVault"
+```
+or 
+
+```bash
+az keyvault network-rule add
+```
+
+isolate Key Vault with private endpoints 
+
+Two components are required for private endpoint connectivity to work correctly.
+
+The first is the private endpoint resource - a network interface in your virtual network subnet, bound to Key Vault via Azure Private Link, that receives a private IP address.
+
+The second is a private DNS zone. Without DNS integration, clients resolve your vault's public IP regardless of the private endpoint. Configure the privatelink.vaultcore.azure.net zone and link it to the virtual network so that <vault-name>.vault.azure.net resolves to the private IP. The Azure portal offers automatic DNS integration during private endpoint creation.
+
+Once the private endpoint is deployed and DNS is configured, disable public network access on the vault. That combination—private endpoint active, public access disabled—means the vault is fully isolated from the internet.
+
+
+
+**Disabling public network access affects some Microsoft-managed services that need to reach Key Vault—including Azure Monitor and Azure Backup. Use the Allow trusted Microsoft services to bypass this firewall exception for services in this category, or ensure those services connect through a path in your private network.**
+
+choosing right isolation model : 
+
+<img width="650" height="300" alt="image" src="https://github.com/user-attachments/assets/b46670b3-7563-4cd7-b2a1-632fb3c48367" />
+
+let the explain this schema 
+
+Private endpoint with public access disabled - the recommended architecture for production workloads storing sensitive data. Provides complete network isolation with no internet-facing endpoint.
+VNet service endpoints - appropriate when private endpoints aren't feasible due to virtual network architecture constraints. Eliminates internet routing for controlled workloads, but the public endpoint persists.
+IP-based firewall rules - a valid transitional state for tightly bounded use cases such as CI/CD pipelines from build agents with static IPs. Not a long-term production architecture.
+Network Security Perimeter (NSP) - a GA option for organizations that need to define a logical isolation boundary across multiple PaaS resources (Key Vault, Storage, SQL Database) outside your virtual network perimeter. NSP uses publicNetworkAccess: SecuredByPerimeter and supports inbound/outbound access rules. Note the setting overrides the trusted Microsoft services bypass—services relying on that bypass, such as Azure Monitor and Azure Backup, are blocked if NSP is active.
+Trusted services bypass - needed when Microsoft-managed services like Azure Monitor, Azure Backup, or Azure Site Recovery require Key Vault access that can't be routed through your private network. Not applicable when NSP is in use.
+
+I'v been alredy added more sources about configured vnet networks https://learn.microsoft.com/en-us/azure/key-vault/general/network-security
+
+**For agents built with Microsoft Copilot Studio, two supported access patterns are available. The first uses Power Platform Virtual Network support in a Managed Environment: when virtual network support is enabled, the agent calls Key Vault directly over a private link using an HTTP Request node, with all traffic staying on your private network. The second uses environment variable secret references: Copilot Studio Service is granted to the Key Vault Secrets User role on the vault, and the agent accesses secrets through Power Platform environment variables—no direct network path to Key Vault is required from the agent itself. Review these patterns before deciding whether IP allow lists or public access are appropriate for agents in your design.**
+
+Q&A
+
+Your organization's compliance policy requires that Key Vault objects can't be permanently deleted during a 90-day retention window—even by subscription owners. Which Key Vault setting enforces retention?
+>Purge Protection
+
+Contoso's application needs to retrieve secrets from Azure Key Vault without storing credentials in code or configuration files. What is the recommended approach?
+>Assign the Key Vault Secrets User role to a managed identity
+
+
+ A security engineer needs application servers in an Azure virtual network to access Key Vault with no public internet exposure. Which solution meets the requirement?
+>Configure a private endpoint for Key Vault
+>
+
+
 
