@@ -667,3 +667,32 @@ When Defender for Key Vault generates an alert, it surfaces in three places:
 >The Security alerts page in Defender for Cloud
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+---
+
+## Investigate and respond to Defender for Key Vault alerts
+Every Defender for Key Vault alert includes a structured set of fields to help you begin the investigation:
+
+>Object ID - the identity (service principal, user, or managed identity) that triggered the alert
+>User Principal Name or IP address - the human-readable identity or originating IP, when available
+>Vault name - the specific vault that generated the alert
+>Secrets or keys accessed - where the alert type supports it, which specific objects were accessed
+>MITRE tactic and severity - the categorization of the threat behavior and the assessed severity
+>Recommended investigation steps - the suggested next actions specific to that alert type
+
+
+
+**Azure virtual machines are assigned Microsoft-issued IP addresses. An alert showing a Microsoft IP address doesn't mean the access originated from Microsoft. Investigate every alert based on the identity and access context, not just the IP address.**
+
