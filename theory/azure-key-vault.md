@@ -170,7 +170,7 @@ Contoso's application needs to retrieve secrets from Azure Key Vault without sto
 
 ---
 
-## Manage keys and secrets in Azure Key Vault
+# Manage keys and secrets in Azure Key Vault
 lifecycle gaps
 Key rotation limits the damage window if a key is ever exposed. An unrotated key in use for three years was potentially accessible to every system, person, and process that touched it across that entire period. Configuring an automatic rotation policy doesn't close that historical window—but it caps all future ones. From the moment rotation is active, the maximum exposure window equals the rotation interval.
 
@@ -402,4 +402,42 @@ A regulatory compliance assessment requires that encryption keys protecting pati
 
  An Azure Function uses a database connection string stored as a Key Vault secret. A security engineer wants to rotate the connection string without causing application downtime. What rotation pattern should they use?
 >Dual-credential rotation using two alternating valid connection strings.
- 
+
+
+ ---
+
+
+ # Manage certificates and monitor Azure Key Vault
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
