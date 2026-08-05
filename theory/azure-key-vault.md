@@ -696,3 +696,97 @@ Every Defender for Key Vault alert includes a structured set of fields to help y
 
 **Azure virtual machines are assigned Microsoft-issued IP addresses. An alert showing a Microsoft IP address doesn't mean the access originated from Microsoft. Investigate every alert based on the identity and access context, not just the IP address.**
 
+
+When an alert fires, follow these four steps:
+
+Identify the source - determine the identity that triggered the alert and is it recognized.
+
+Respond to the immediate threat - restrict or remove access to stop further exposure.
+
+Measure the impact - determine which secrets were accessed and for how long.
+
+Take action - rotate affected credentials and notify downstream application owners.
+
+<img width="1047" height="109" alt="image" src="https://github.com/user-attachments/assets/af44e563-ce09-4c69-85fb-f2e352a3a945" />
+
+Identify the source (Step 1)
+Your first task is to determine whether the access was from a known identity in your Azure tenant.
+
+
+
+
+
+
+
+
+
+Open the alert in Defender for Cloud and note the Object ID and User Principal Name (UPN) (if present). Cross-reference the Object ID against your Microsoft Entra ID to find the identity: a user account, a service principal, a managed identity, or an AI agent workload identity. If you recognize the identity, contact the application owner or the user directly and ask whether the activity was expected.
+
+Microsoft Defender for Key Vault is designed to catch stolen credential use—scenarios where access looks legitimate because the attacker is using real credentials. Don't dismiss an alert simply because you recognize the identity. Contact the owner and verify the activity was intentional before marking the alert as resolved.
+
+AI agents—including Azure AI Foundry agents and custom automation workloads—authenticate using a service principal or managed identity. They don't have a separate identity type in Microsoft Entra ID. If you suspect an AI workload triggered the alert, cross-reference the Object ID against your registered AI applications and managed identity assignments to confirm.
+
+
+
+
+
+Respond to the immediate threat (Step 2)
+
+<img width="592" height="539" alt="image" src="https://github.com/user-attachments/assets/f572eb43-5ca4-4e4b-856a-f04e761fcde4" />
+
+Unrecognized IP address or The Onion Router (TOR) exit node: The vault firewall is your first control. Navigate to the Key Vault in the Azure portal, open Networking, and enable the firewall if it isn't already active. Add your known trusted networks and virtual networks explicitly. Deny all other traffic. Denying traffic stops any further access from the suspicious source while you investigate.
+
+Unauthorized application or suspicious user: Navigate to Key Vault > Access control (IAM) and remove the role assignment for the suspicious identity. If complete removal isn't immediately possible—for example, if the identity is shared with a legitimate workload—restrict the operations it can perform to the minimum set required and flag the identity for rotation. Azure RBAC is the recommended permission model for Key Vault. If the vault is still using the legacy vault access policy model, navigate to Key Vault > Access policies to remove the security principal as an immediate response—then treat migrating the vault to Azure RBAC as a required follow-up action. The legacy model lacks the audit granularity, role inheritance, and centralized management that RBAC provides, and leaves your vaults harder to secure and monitor.
+
+Microsoft Entra role with tenant-level permissions: If the suspicious identity holds a Microsoft Entra role (for example, a Global Administrator or Privileged Role Administrator), the issue extends beyond Key Vault access policy controls. Escalate to your identity administrator. Determine whether Microsoft Entra role assignments need to be reduced, time-limited through Privileged Identity Management, or revoked entirely.
+
+
+
+
+
+
+
+Measure the issue (Step 3)
+Once you stop or contain the suspicious access, determine the minimum scope of the exposure before handing the investigation to your SOC or incident response team.
+
+Open the Security page on the affected Key Vault and select the triggered alert. Review the list of secrets and keys that were accessed and their access timestamps. The list gives your SOC team the starting point they need: which vault, which objects, and when.
+
+The deeper forensic investigation—tracing the full access history, identifying lateral movement, and determining whether the attacker reached other Azure services—requires the Key Vault diagnostic logs you configured. With diagnostic logging enabled, Key Vault writes every data plane operation to the AuditEvent log table in your Log Analytics workspace. Your analyst team queries that table for the suspicious Object ID, UPN, or IP address across 24 to 72 hours before the alert fired, looking for SecretGet, KeyGet, CertificateGet, and VaultList operations. They check whether the same identity accessed other vaults, storage accounts, databases, or downstream services during the same window—a single alert can be the visible tip of a broader compromise.
+
+Your role in Step 3 is to ensure the audit data exists and to brief the SOC team on the initial scope from the alert. If diagnostic logging wasn't configured before the alert fired, there's no historical access records to hand off—making the investigation substantially harder. Enabling diagnostic logging on all Key Vaults is a Defender for Cloud security recommendation under the Microsoft Cloud Security Benchmark (MCSB) controls, and it's one of the most important preincident configurations a security engineer can make.
+
+
+Take action (Step 4)
+With the threat contained and the issue measured, complete the response.
+
+Rotate all affected credentials. For each secret, key, or certificate that the suspicious identity accessed: disable or delete the current version in Key Vault and create a new version. Don't assume the credential is still secret after the alert. Treat it as compromised.
+
+Notify downstream application owners. Identify each application that uses the rotated credentials. Contact the application owner and communicate the compromise time window—the period from the earliest suspicious access you found in Step 3 through the time you completed containment in Step 2. Application owners must audit their systems for any activity performed using the compromised credentials during that window, assess what data can be accessed or modified, and take appropriate action.
+
+For service-to-service credentials: If a compromised service principal is the source, work with the identity team to rotate the client secret or certificate for that service principal, and audit other resources that service principal had access to.
+
+Monitor the vault after remediation. After rotating credentials and removing compromised access, watch the vault closely for 48 to 72 hours using the Security alerts page in Defender for Cloud. A persistent threat actor can attempt access with different credentials or from a new IP. A quiet vault after remediation means your response contained the incident. Further anomalous access means the attacker still has a foothold somewhere in your environment.
+
+
+Key vaults should have soft delete enabled - prevents accidental or malicious permanent deletion of vault objects
+Key vaults should have purge protection enabled - prevents bypass of soft-delete retention
+Diagnostic logs in Key Vault should be enabled - ensures you have the audit data needed for Step 3 of every incident response
+Addressing recommendations reduces your exposure. The alert investigation workflow in this unit tells you when an attacker is exploiting an unremediated posture gap. Both work together—recommendations improve the posture; alerts tell you when the posture isn't sufficient to stop a threat.
+
+
+### Q&A
+ A security team wants to discover plaintext connection strings stored on Azure virtual machine (VM) disks across their subscription. Which Microsoft Defender for Cloud plan provides this agentless scanning capability?
+>Defender Cloud Security Posture Management (CSPM) or Defender for Servers Plan 2
+
+ Microsoft Defender for Key Vault generates an alert for access from The Onion Router (TOR) exit node. What is the correct first step in the investigation and response process?
+>Verify whether the traffic originated from within your Azure tenant to identify the source.
+
+
+
+A security engineer reviews Defender CSPM findings and sees that an ARM template contains a plaintext storage account connection string. How should they remediate this finding?
+>Remove the hardcoded secret from the deployment template and store it as a secret in Azure Key Vault, referenced at runtime.
+
+An organization enabled Microsoft Defender for Key Vault but hasn't enabled Defender CSPM. Which security risk remains unaddressed?
+>Plaintext credentials stored on VM disks or in deployment templates won't be detected.
+
+
