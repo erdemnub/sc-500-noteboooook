@@ -248,3 +248,150 @@ BYOK is supported for RSA-HSM and EC-HSM key types with supported HSM vendors in
 
 ### Key autotoration.
 
+A rotation policy on a key specifies:
+
+Rotation time: how frequently Key Vault creates a new version. Set rotation time based on your compliance requirements and operational risk tolerance.
+
+Expiry time: the lifetime of each key version after which Key Vault marks it as expired. For fully automated rotation, expiry must also be set.
+
+Notification time: the number of days before expiry at which Key Vault publishes a near-expiry event to Azure Event Grid.
+
+
+
+When Key Vault creates a new key version through rotation, applications that reference the key by its versionless URI (using only the vault URL and key name, without a specific version) automatically receive the latest version. No application configuration change is needed at rotation time.
+
+for example : 
+
+>Versioned URI (Not be should)
+(https://myvault[.]vault.azure.net/keys/mykey/a1b2c3d4e5f6)
+
+>Versionless URI
+(https://myvault[.]vault.azure.net/keys/mykey) (No key id no another path. )
+
+
+
+example can apply scenerio :
+
+```bash
+az keyvault key rotation-policy update --vault-name <vault-name> --name <key-name> --value ./rotation-policy.json
+```
+
+the output is : 
+```
+{
+  "lifetimeActions": [
+    {
+      "trigger": { "timeAfterCreate": "P18M" },
+      "action": { "type": "Rotate" }
+    },
+    {
+      "trigger": { "timeBeforeExpiry": "P30D" },
+      "action": { "type": "Notify" }
+    }
+  ],
+  "attributes": {
+    "expiryTime": "P2Y"
+  }
+}
+```
+**This policy rotates the key 18 months after creation and notifies 30 days before the two-year expiry date and after 2 year that will be expire.**
+
+<img width="325" height="650" alt="image" src="https://github.com/user-attachments/assets/0f1384c4-6bc3-4bf3-8c62-a118bdd256a4" />
+
+Applications using the versionless URI always encrypt new data with the latest version. However, for data encryption scenarios—where a data encryption key (DEK) is wrapped by the Key Vault key—store the versioned URI alongside the encrypted data so decryption always uses the exact key version that wrapped the DEK. Existing data remains encrypted under its original version until you explicitly re-encrypt it. Re-encrypting existing data to bring it under the new key version is a separate, planned activity—it isn't automatic, and it isn't required for decryption to continue working.
+
+In addition to autorotation, you can set NotBefore and Expires attributes on individual key versions to control their operational window. A key version with a future NotBefore date isn't usable until that date—useful for pregenerating a replacement key during a planned cutover. A key version with a past Expires date signals to consuming services that it should no longer be used for new operations.
+
+Microsoft.KeyVault.KeyNearExpiry
+
+on cli :
+
+```bash
+az eventgrid event-subscription create \
+  --name "evs-key-near-expiry-notification" \
+  --source-resource-id "/subscriptions/<subscription-id>/resourceGroups/<resource-group-name>/providers/Microsoft.KeyVault/vaults/<keyvault-name>" \
+  --included-event-types "Microsoft.KeyVault.KeyNearExpiry" \
+  --endpoint-type "azurefunction" \
+  --endpoint "/subscriptions/<subscription-id>/resourceGroups/<resource-group-name>/providers/Microsoft.Web/sites/<function-app-name>/functions/<function-name>"
+```
+---
+
+## Manage secrets in Azure Key Vault
+
+In Azure Key Vault, a secret is any sensitive string value: connection strings, API keys, passwords, storage account keys, tokens, and similar credentials. Secrets are intentionally distinct from keys and certificates. Keys perform cryptographic operations (signing, encrypting, wrapping). Certificates assert identity through a Public Key Infrastructure (PKI) chain. Secrets are simply values—stored securely, accessed through a controlled API.
+
+Every time you update a secret value, Key Vault creates a new version of that secret. The old version is retained—you can retrieve it, audit access to it, and disable it.
+
+You can set two important attributes on any secret version:
+
+Enabled/Disabled: A disabled secret version can't be retrieved. Disabling (rather than deleting) a version is the correct way to deprecate a credential while retaining the audit trail. If an incident investigation later requires knowing when a specific credential was active, the disabled version and its access log are still available.
+Expires: Set an expiry date on each secret version to establish a maximum credential lifetime. When a version expires, Key Vault still allows retrieval—expiry is informational, not a hard enforcement block. The attribute signals to applications and downstream services that the credential should no longer be used for new operations, and it triggers Event Grid lifecycle events that drive rotation automation. The version and its access history remain in the vault.
+
+lets review when will expire our keyvault secret.
+```bash
+az keyvault secret set-attributes --vault-name <vault-name> --name <secret-name> --expires 2026-10-14T00:00:00Z
+```
+
+Key Vault references in Azure App Service and Azure Functions makes seamless application key usage possible.
+
+Instead of storing a connection string directly in an app setting, you store a reference:
+
+```
+@Microsoft.KeyVault(SecretUri=https://<vault-name>.vault.azure.net/secrets/<secret-name>)
+```
+Versionless URI - references the secret by name only, without a pinned version. When the application starts, it resolves this reference to the latest enabled version of the secret. When you rotate the secret and add a new version, the application picks up the new value automatically within 24 hours. 
+
+---
+
+### credential rotation
+
+
+What is a credential?: Any secret key used for authentication, such as a database password, API key, or connection string.
+
+What is single-credential rotation?: The simplest rotation pattern where a single secret is updated to a new value in a single atomic step.
+
+Where does the risk come from?: There is a brief transition delay between updating the target system and updating the secret in Key Vault.
+
+What is the impact on the application?: If the application reads the old credential from Key Vault during that brief window, authentication fails because the target system already expects the new one.
+
+Where is it acceptable?: It is acceptable for non-critical workloads with retry logic, but unacceptable for high-availability (HA) production environments.
+
+
+Implement dual-credential rotation
+Dual-credential rotation eliminates the transition window by maintaining two valid credentials simultaneously in the target system. The pattern accommodates the full rotation cycle without a moment when both the application and the target system agree on a valid credential.
+
+Here's the pattern in detail, using a database as the example:
+
+Set up: The database has two sign-in credentials - db-user-a and db-user-b. Both are valid. The vault's active secret contains the password for db-user-a. The application uses the secret (versionless URI) to authenticate.
+
+Rotate credential B first: Generate a new password for db-user-b. Update the database sign-in for db-user-b with the new password. The application is still using db-user-a - nothing disrupts it.
+
+Store credential B as the new secret version: Add the new db-user-b password to Key Vault as a new version of the secret. The versionless reference in the application now resolves to db-user-b.
+
+Verify the application uses credential B: Confirm the application is authenticating with db-user-b. You can validate this through query logs, connection tracing, or diagnostic logs.
+
+Rotate credential A: Now that the application runs on db-user-b, generate a new password for db-user-a. Update the database sign-in. The application isn't using db-user-a, so this change causes zero disruption.
+
+Store credential A as the next secret version: Add the new db-user-a password as the next version. The cycle is complete.
+
+Credentials alternate on each rotation cycle. At no point, does a rotation event leave the application without a valid credential in the target system.
+
+
+
+
+Implementing dual-credential rotation with Azure Functions: This pattern is typically automated using an Azure Function that triggers on the Key Vault SecretNearExpiry Event Grid event. When the secret approaches its expiry date:
+
+The Microsoft.KeyVault.SecretNearExpiry Event Grid event calls the function app endpoint via HTTP POST.
+The function identifies which credential isn't* currently stored in the latest vault version (the alternating credential).
+The function regenerates that credential in the target system.
+The function stores the new credential as a new version in Key Vault.
+The function app's managed identity needs the Key Vault Secrets Officer role on the vault and the appropriate permission on the target resource (for example, the Storage Account Key Operator Service Role for storage account keys, or database admin credentials for SQL sign-in rotation).
+
+example schema :
+
+
+
+<img width="150" height="532" alt="image" src="https://github.com/user-attachments/assets/51a5f81d-2d22-442d-8baf-39a502b773c7" />
+
+
+
