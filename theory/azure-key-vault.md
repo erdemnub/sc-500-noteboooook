@@ -543,7 +543,7 @@ Event Grid subscriptions trigger automation—the rotation functions from the du
 When Microsoft Defender for Cloud raises an alert for suspicious access, the AuditEvent diagnostic log is where you find the evidence to investigate. Plan your log retention and query tooling before an incident occurs—not after.
 
 ---
-### Q&A 
+### Q&A 
 
 A security engineer creates a Log Analytics alert rule to detect Key Vault access failures. After admins deployed the rule, the alert never fires despite repeated authentication errors. What configuration step was most likely missed?
 
@@ -559,6 +559,33 @@ A secret rotation function needs to trigger immediately when a new secret versio
 
 
 
+##  Defender Cloud Security Posture Management (CSPM)
+
+Defender CSPM uses agentless scanning—there's no agent to deploy, no network connection required from the virtual machine (VM), and no performance issues on running workloads. For virtual machines, the scanning engine takes a disk snapshot using cloud APIs, analyzes it for exposed credentials, and sends metadata to Defender for Cloud. The VM continues running normally throughout the process.
+
+The scanning engine searches for a broad range of secret types:
+
+Azure SQL connection strings
+Storage account connection strings and SAS tokens
+SSH private keys
+Azure Cosmos DB credentials
+AWS access keys
+Microsoft Entra ID client secrets
+API tokens
+Personal access tokens for services like Azure DevOps and GitHub
+For SSH keys specifically, the engine goes one step further—it verifies whether a discovered key can actually authenticate to another reachable machine. Keys that can't be verified appear as unverified in the recommendations view; keys with confirmed lateral movement potential appear as exploitable attack paths.
+
+Three scanning types cover the environments where misplaced secrets most commonly appear.
+
+<img width="302" height="241" alt="image" src="https://github.com/user-attachments/assets/a1bdcb2c-3cc0-4b2d-a2b3-dd9bb457517a" />
+
+**Agentless machine secrets scanning requires the Defender Cloud Security Posture Management (CSPM) plan or Defender for Servers Plan 2**
+
+SSH keys found on VM disks are verified against reachable machines in your environment. If a key can be used to authenticate to another VM, Defender for Cloud flags it as an exploitable lateral movement path—not just a low-severity finding.
+
+When you receive a machine secrets finding, your first question is whether the exposed credential is still active. An active credential with broad permissions is a priority remediation regardless of the secret type.
+
+GitHub Advanced Security is a separate licensing requirement for GitHub repository scanning. Azure DevOps repository scanning is included with the Defender CSPM plan
 
 
 
@@ -566,8 +593,77 @@ A secret rotation function needs to trigger immediately when a new secret versio
 
 
 
+Review findings in Defender for Cloud
+When the scanning engine finds secrets, recommendations are triggered under the Remediate vulnerabilities security control on the Defender for Cloud Recommendations page. The key recommendations to monitor are:
+
+Machines should have secrets findings resolved - for Azure VMs
+EC2 instances should have secrets findings resolved - for AWS instances
+VM instances should have secrets findings resolved - for GCP instances
+To investigate a specific machine, navigate to Defender for Cloud > Recommendations, select the relevant recommendation, and then select a specific VM from the affected resources list. The detail view shows each secret found: the secret type, the file path where it was detected, and the recommended remediation steps. You can also reach the same detail through Defender for Cloud > Inventory - selecting a specific VM shows all security findings for that resource in one view.
+
+Cloud security explorer offers an extra querying interface. Predefined queries return all VMs with secrets that can authenticate to another VM. It also returns all VMs with secrets that can reach a storage account, or all VMs with secrets that can reach a SQL database. These queries are useful for prioritizing remediation when you have many findings across a large environment.
+
+---
+
+### Enable Microsoft Defender for Key Vault
+
+Microsoft Defender for Key Vault is a workload protection plan—part of Defender for Cloud's Cloud Workload Protection Platform (CWPP)—
 
 
+<img width="1352" height="751" alt="image" src="https://github.com/user-attachments/assets/d93388b2-a6fe-41dd-9440-81e6831b30b4" />
 
+# Virtual Machines / Servers
+az security pricing create --name "VirtualMachines" --tier "Standard"
+
+# App Service
+az security pricing create --name "AppServices" --tier "Standard"
+
+# Storage Accounts
+az security pricing create --name "StorageAccounts" --tier "Standard"
+
+# Containers (AKS & Container Registries)
+az security pricing create --name "Containers" --tier "Standard"
+
+# Databases (SQL, OpenSource Databases)
+az security pricing create --name "SqlServers" --tier "Standard"
+az security pricing create --name "SqlServerVirtualMachines" --tier "Standard"
+az security pricing create --name "OpenSourceRelationalDatabases" --tier "Standard"
+
+# Resource Manager (ARM Plane)
+az security pricing create --name "Arm" --tier "Standard"
+
+# Key Vaults
+az security pricing create --name "KeyVaults" --tier "Standard"
+
+# API Management
+az security pricing create --name "Api" --tier "Standard"
+
+
+that outputs:
+```bash
+az security pricing list --output table
+```
+
+
+**Microsoft Defender for Key Vault isn't enabled by default. A subscription with Defender for Cloud active but without this plan has no anomalous access alerting for its vaults.**
+
+**To enforce Microsoft Defender for Key Vault across multiple subscriptions, enable Defender for Cloud at the management group level. Management group assignment applies the plan to all child subscriptions without requiring per-subscription configuration**
+to take more information visit : https://learn.microsoft.com/en-us/azure/defender-for-cloud/onboard-management-group
+
+### what Defender for Key Vault monitors
+Access from a suspicious IP address or TOR exit node (KV.SuspiciousIPAccess, KV.TORAccess)—Access to the vault originated from an IP address associated with a known threat actor, a scanning infrastructure, or The Onion Router (TOR) exit node. This pattern is consistent with a credential theft scenario: a threat actor who obtained valid credentials for the vault is accessing it from outside your expected network footprint. MITRE ATT&CK tactic: Credential Access.
+
+High volume of operations (KV.OperationVolumeAnomaly)—The vault received an unusually high number of operations in a short time window. Bulk reading of secrets at a rate inconsistent with the vault's normal usage pattern is a strong indicator of data exfiltration. MITRE ATT&CK tactic: Credential Access.
+
+Suspicious policy change followed by secret queries (KV.PutGetAnomaly)—A vault access policy was modified and then, within a short period, secrets were retrieved by an identity that typically doesn't access this vault. This pattern suggests a threat actor modified access permissions to gain access to secrets they shouldn't be able to reach, then immediately harvested them. MITRE ATT&CK tactic: Credential Access.
+
+Unusual application usage (KV.AnomalousAccessOperation)—The vault was accessed by an application identity not previously seen on this vault, or an application that changed its access behavior. This pattern appears when a compromised service principal, managed identity, or AI agent workload identity is used to access vault secrets outside its normal scope. MITRE ATT&CK tactic: Credential Access.
+
+### Locate where alerts surface
+When Defender for Key Vault generates an alert, it surfaces in three places:
+
+>The Security page of the specific Key Vault in the Azure portal
+>The Workload protections dashboard in Defender for Cloud
+>The Security alerts page in Defender for Cloud
 
 
