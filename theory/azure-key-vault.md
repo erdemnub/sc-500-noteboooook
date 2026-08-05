@@ -393,5 +393,13 @@ example schema :
 
 <img width="150" height="532" alt="image" src="https://github.com/user-attachments/assets/51a5f81d-2d22-442d-8baf-39a502b773c7" />
 
+### Q&A
+A regulatory compliance assessment requires that encryption keys protecting patient record archives meet FIPS 140-3 Level 3 hardware security requirements. Which Azure Key Vault configuration satisfies this requirement?
+>Create RSA-HSM keys in an Azure Key Vault Premium vault.
 
+ A security engineer configures an autorotation policy for an RSA encryption key in Azure Key Vault. What happens to data that was encrypted with the previous key version after rotation occurs?
+>Previously encrypted data remains accessible because Key Vault retains all key versions.
 
+ An Azure Function uses a database connection string stored as a Key Vault secret. A security engineer wants to rotate the connection string without causing application downtime. What rotation pattern should they use?
+>Dual-credential rotation using two alternating valid connection strings.
+ 
