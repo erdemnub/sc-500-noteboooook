@@ -161,3 +161,90 @@ Contoso's application needs to retrieve secrets from Azure Key Vault without sto
 
 
 
+
+
+
+
+
+
+
+---
+
+## Manage keys and secrets in Azure Key Vault
+lifecycle gaps
+Key rotation limits the damage window if a key is ever exposed. An unrotated key in use for three years was potentially accessible to every system, person, and process that touched it across that entire period. Configuring an automatic rotation policy doesn't close that historical window—but it caps all future ones. From the moment rotation is active, the maximum exposure window equals the rotation interval.
+
+Secret expiry works differently but addresses the same underlying risk. An expiry date doesn't rotate credentials automatically—it forces them to become invalid, creating an operational requirement to replace them. Without expiry, a compromised database connection string remains usable for as long as the secret exists. The credential becomes a permanently open door rather than one that closes on a schedule.
+
+Rotation and Expiry
+
+ ---
+
+## Manage cryptographic keys in Azure Key Vault
+for example A key unrotated for three years isn't just a policy violation—it's an exposure window. If the key was ever visible to an unauthorized party, attackers had three years to use it. 
+
+Azure Key Vault supports three cryptographic key types:
+>RSA keys are asymmetric keys used for encryption, decryption, digital signatures, and key wrapping. Key Vault supports sizes of 2,048 bits, 3,072 bits, and 4,096 bits. RSA-2048 is the minimum for production use; RSA-4096 is appropriate for long-term data protection or where extended assurance is required.
+
+How it works: It uses a pair of keys: a Public Key to encrypt (lock) and a Private Key to decrypt (unlock).
+
+Key Sizes: 2048, 3072, 4096 bits.
+
+Analogy: A public padlock. Anyone can snap the padlock shut on a box (Public Key), but only you hold the key to open it (Private Key).
+
+Use Cases:
+
+Encrypting small data or secret tokens.
+
+Key Wrapping: Encrypting symmetric keys so they can be transferred safely.
+
+Digital signatures.
+
+>Elliptic curve (EC) keys are asymmetric keys used for digital signatures. The supported curves are P-256, P-384, P-521, and P-256K (secp256k1). EC keys produce smaller key material at equivalent security strength compared to RSA, making them efficient for certificate operations and signing workloads.
+
+Elliptic Curve (EC) Keys (Asymmetric / Asimetrik)
+How it works: Like RSA, it is asymmetric (uses public/private key pairs), but it is based on complex algebraic curves instead of huge prime numbers.
+
+Supported Curves: P-256, P-384, P-521, and P-256K (secp256k1).
+
+Why use EC over RSA? EC produces much smaller key sizes with the same level of security as RSA. Smaller key size = faster performance, less storage, and lower computational power needed.
+
+Analogy: A lighter, high-tech titanium padlock. It offers the exact same strength as a heavy iron padlock (RSA), but weighs a fraction of the size.
+
+Use Cases:
+
+Digital Signatures: Verifying identity quickly.
+
+SSL/TLS Certificates: Securing web traffic efficiently.
+
+Blockchain/Web3: P-256K (secp256k1) is used in Bitcoin and Ethereum wallet signing operations.
+
+>Symmetric (octet) keys are used for symmetric encryption. Software-protected octet keys support 128-bit, 192-bit, and 256-bit sizes. Unlike RSA and EC keys, octet keys can't be HSM-backed in the Key Vault Premium service—they're supported as HSM keys only on Azure Key Vault Managed HSM. (**Symmetric / Octet Keys (Symmetric / Simetrik)
+How it works: It uses a single shared key to both encrypt and decrypt data. (This is where standard algorithms like AES fit in Supported Sizes: 128-bit, 192-bit, and 256-bit.**)
+
+
+In hsm's: 
+
+HSM-protected keys are generated, stored, and processed entirely within hardware security modules (HSMs) validated to FIPS 140-3 Level 3. (**Key operations execute inside the HSM boundary; the private key material never exists in software memory.**)
+
+
+**HSM-protected keys require the Premium SKU for Azure Key Vault. The Standard SKU supports software-protected keys only.** And RSA-HSM or EC-HSM keys. 
+
+
+### BYOK ( Bring Your Own Key ) SCENERIOS.
+
+BYOK scenario, you generate the key material inside your own on-premises or external HSM. And transferring that key to azure key vault services ,  Key Exchange Key (KEK). 
+
+The proceess schema : 
+
+1.You generate a KEK as an RSA-HSM key inside your Key Vault Premium instance. The KEK must have only the import key operation permitted—the import operation is mutually exclusive with all other key operations.
+2.You download the KEK public key as a .pem file to a computer connected to your on-premises HSM.
+3.On the offline computer, you use your HSM vendor's BYOK tool to encrypt (wrap) your Customer Key using the KEK public key, producing a BYOK file.
+4.You upload the BYOK file to Key Vault. Inside the Key Vault HSM, the KEK private key unwraps the Customer Key, and the key material is imported directly into HSM protection.
+
+BYOK is supported for RSA-HSM and EC-HSM key types with supported HSM vendors including Thales, Entrust (nShield), Fortanix, IBM, Marvell, Utimaco, and others. 
+
+---
+
+### Key autotoration.
+
