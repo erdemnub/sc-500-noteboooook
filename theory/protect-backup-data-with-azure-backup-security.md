@@ -41,7 +41,7 @@ Enabled and Locked (irreversible): Immutability is permanently active and can't 
 
 
 
-### Azure Backup security posture rating
+### Azure Backup security posture rating :
 
 The Excellent tier requires two elements: a deletion protection mechanism (either locked immutability or always-on soft delete), and Multi-User Authorization. The deletion protection mechanisms—soft delete and immutability—protect recovery points after an attack begins. Multi-User Authorization prevents a single compromised credential from disabling those protections.
 
