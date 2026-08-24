@@ -141,3 +141,16 @@ az resource lock create \
 Applying locks manually works for known critical resources, but new resources provisioned without locks reintroduce the risk. Use a built-in or custom Azure Policy definition with a DeployIfNotExists effect to automatically deploy a Delete lock on resources that match specific criteria, such as all Recovery Services vaults or all production virtual networks tagged Environment: Production.
 
 
+
+
+
+Q&A
+1.A security engineer assigns an Azure Policy definition with the DeployIfNotExists effect. Existing resources in the subscription don't meet the policy requirement. What must the engineer do to bring those resources into compliance?
+>Create a remediation task that triggers the DeployIfNotExists deployment against the noncompliant resources.
+
+2.A security engineer applies a Delete lock to a production Azure virtual network. A network administrator with the Owner role attempts to delete the network. What is the result?
+>The delete is blocked. Resource locks override all RBAC role assignments, including Owner.
+
+3.Company's security team receives a request to exempt a storage account from a policy that requires HTTPS-only access. The account uses a legacy application, and the network team confirmed that a compensating network control routes all traffic through an encrypted gateway. Which exemption category should the security engineer select?
+>Mitigated—an alternative control addresses the same risk that the policy is designed to prevent.
+
