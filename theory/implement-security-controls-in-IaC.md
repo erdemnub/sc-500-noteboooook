@@ -1,0 +1,2 @@
+## Microsoft Security DevOps (MSDO) 
+to scan infrastructure as code (IaC) templates in the CI/CD pipeline before deployment, catching misconfigurations while they're still in source control. You also learn how to use Azure Policy to enforce compliance as a platform-level backstop—even for deployments that bypass the pipeline entirely. Together, these two layers form a complete defense-in-depth model for IaC security.
