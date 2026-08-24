@@ -131,3 +131,15 @@ If CMK encryption is a compliance requirement, configure it during vault creatio
 **Key Level (KEK — Key Encryption Key / CMK): The DEK cannot remain exposed in plain text; it is wrapped (encrypted) by the Customer-Managed Key (CMK) stored in Azure Key Vault.**
 
 **Hardware Level (HSM — Hardware Security Module): The CMK itself resides inside FIPS-compliant, dedicated physical hardware security modules (HSM) within Key Vault, ensuring the key material never leaves the cryptographic boundary unencrypted.** (Maximum)
+
+
+
+## Q&A 
+1.A security engineer enables enhanced soft delete on a Recovery Services vault and configures the always-on setting. What is the primary effect of the always-on setting?
+>Soft delete can't be disabled on the vault after the always-on setting is configured.
+
+2. Company's security team needs to prevent the backup administrator from disabling soft delete or stopping backups with data deletion—even if the administrator's credentials are compromised. Which Azure Backup feature provides this protection?
+>Multi-User Authorization using Resource Guard.
+
+3.A security engineer sets a Recovery Services vault to the Enabled and Locked immutability state. What is the primary consequence of this irreversible decision?
+>Vault immutability becomes permanent—it can't be disabled or changed back to a reversible state.
