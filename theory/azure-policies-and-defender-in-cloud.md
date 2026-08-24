@@ -29,3 +29,72 @@ To view compliance results:
 Go to Policy → Compliance to open the compliance dashboard.
 
 The compliance dashboard organizes these findings by policy definition and subscription. Each noncompliant resource includes a reason code (for example, "Resource doesn't match policy rule") and a link to the resource's properties in the Azure portal. 
+
+When built-in definitions aren't enough
+Built-in policy definitions cover common security controls like encryption, network access, and identity management, but they operate at a general level. Organizations need more granular control to match their specific security standards and compliance frameworks
+
+Custom policy definitions let you write the exact 'policyRule' logic that implements these requirements. You define the condition that triggers evaluation, the parameters that make the definition reusable across environments, and the effect that enforces compliance.
+
+A custom policy definition uses a JSON (JavaScript Object Notation) structure with three core components: mode, parameters, and policyRule. Understanding each component helps you build definitions that enforce exactly what your organization requires.
+
+```json
+{
+  "properties": {
+    "displayName": "Storage accounts must use the approved Log Analytics workspace",
+    "description": "Ensures diagnostic settings on storage accounts send logs to the Contoso central Log Analytics workspace.",
+    "mode": "All",
+    "parameters": {
+      "approvedWorkspaceId": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Approved Log Analytics workspace ID",
+          "description": "The resource ID of the required Log Analytics workspace."
+        }
+      },
+      "effect": {
+        "type": "String",
+        "defaultValue": "AuditIfNotExists",
+        "allowedValues": ["AuditIfNotExists", "Disabled"]
+      }
+    },
+    "policyRule": {
+      "if": {
+        "field": "type",
+        "equals": "Microsoft.Storage/storageAccounts"
+      },
+      "then": {
+        "effect": "[parameters('effect')]",
+        "details": {
+          "type": "Microsoft.Insights/diagnosticSettings",
+          "existenceCondition": {
+            "field": "Microsoft.Insights/diagnosticSettings/workspaceId",
+            "equals": "[parameters('approvedWorkspaceId')]"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+The mode property determines which resource types the policy evaluates. Use "All" to evaluate all resource types, including those without tags and location support, such as diagnostic settings and network security rules. Use "Indexed" to evaluate only resource types that support tags and location, which is appropriate for policies that check tag compliance or regional restrictions.
+
+Parameters make the definition reusable across different environments and scopes. The approvedWorkspaceId parameter lets you specify a different Log Analytics workspace for each assignment without modifying the definition. Always include an effect parameter with allowedValues so the assignment can toggle between audit mode during testing and enforcement mode in production.
+
+The policyRule contains two sections: if and then. The if section defines the condition that triggers evaluation, using the field keyword to access resource properties like type, location, tags, or SKU. The then section specifies the action when the condition is true, referencing the effect parameter. For AuditIfNotExists and DeployIfNotExists effects, the details.existenceCondition section checks whether the required associated resource or property exists.
+
+
+
+
+
+
+Configure a remediation task for existing noncompliant resources 
+
+Custom policies with DeployIfNotExists effects identify noncompliant resources but don't automatically fix them. Remediation tasks apply the required configuration to existing resources that were created before the policy assignment or that became noncompliant due to configuration drift.
+
+Remediation tasks require a managed identity assigned to the policy assignment. The managed identity must have the role-based access control (RBAC) permissions needed to deploy the required resource. For a policy that deploys diagnostic settings, the managed identity needs the "Monitoring Contributor" role. For a policy that configures network security rules, the managed identity needs "Network Contributor."
+
+
+### Policy exemptions
+
+Azure Policy supports two exemption categories. A waiver exemption indicates the organization accepts the risk identified by the policy. No compensating control is in place, but leadership reviewed the risk and decided it's acceptable for this specific resource, often due to business constraints or legacy system limitations. A mitigated exemption indicates a compensating control addresses the same security objective that the policy targets. The resource doesn't technically comply with the policy definition, but the underlying security requirement is satisfied through an alternative mechanism
