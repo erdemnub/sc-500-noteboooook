@@ -98,3 +98,46 @@ Remediation tasks require a managed identity assigned to the policy assignment. 
 ### Policy exemptions
 
 Azure Policy supports two exemption categories. A waiver exemption indicates the organization accepts the risk identified by the policy. No compensating control is in place, but leadership reviewed the risk and decided it's acceptable for this specific resource, often due to business constraints or legacy system limitations. A mitigated exemption indicates a compensating control addresses the same security objective that the policy targets. The resource doesn't technically comply with the policy definition, but the underlying security requirement is satisfied through an alternative mechanism
+
+. When the exemption expires, the resource becomes subject to the policy assignment again, and compliance evaluation resumes
+
+Azure Policy prevents noncompliant resources from being created, but critical resources that already exist and are correctly configured still need protection from accidental or malicious deletion.
+
+
+ ## Implement resource locks 
+
+you learn how to configure resource locks. Locks prevent deletion or modification of critical resources, understand lock inheritance behavior, and control who can create and remove locks.
+
+Use a Delete lock to prevent accidental deletion on active workloads while allowing modifications, and reserve a ReadOnly lock strictly for frozen, static resources where all write and update operations must be blocked.
+
+Control who can create and remove locks
+Resource locks provide separation of duties between users who manage resources and users who control governance. Creating or deleting a resource lock requires the Microsoft.Authorization/locks/write and Microsoft.Authorization/locks/delete permissions, which are granted by the Owner and User Access Administrator built-in roles.
+
+The Contributor role grants permission to create, update, and delete resources but doesn't include permission to manage locks. This design ensures that developers with Contributor access can manage their resources but can't remove locks applied by the security or governance team.
+
+
+ Use a built-in or custom Azure Policy definition with a DeployIfNotExists effect to automatically deploy a Delete lock on resources that match specific criteria, such as all Recovery Services vaults or all production virtual networks tagged Environment: Production.
+
+
+Protecting a critical resource with a lock requires just a few steps in the command line : 
+
+```bash
+az resource lock create \
+ --lock-type ReadOnly \
+ --name myLock \
+ --resource-group MyResourceGroup \
+ --resource myVnet \
+ --resource-type Microsoft.Network/virtualNetworks
+```
+with (DeleteLock)
+```bash
+az resource lock create \
+ --lock-type CanNotDelete \
+ -n protectStorage \
+ -g MyResourceGroup \
+ --resource mystorageacct \
+ --resource-type Microsoft.Storage/storageAccounts
+```
+Applying locks manually works for known critical resources, but new resources provisioned without locks reintroduce the risk. Use a built-in or custom Azure Policy definition with a DeployIfNotExists effect to automatically deploy a Delete lock on resources that match specific criteria, such as all Recovery Services vaults or all production virtual networks tagged Environment: Production.
+
+
