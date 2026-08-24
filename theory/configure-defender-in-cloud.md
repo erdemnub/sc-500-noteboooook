@@ -85,8 +85,10 @@ Once the security engineer configures standards and deploys remediation controls
 
 1.A security engineer needs to deploy the required encryption configuration to 400 storage accounts that Defender for Cloud flagged as noncompliant. The same configuration change is needed on every resource. What is the most efficient approach?
 >Use the Fix action on the recommendation to automatically deploy the required configuration to all selected noncompliant resources at once.
+
 2.Company'S security team creates a custom security standard in Defender for Cloud to enforce internal security policies. What technology does Defender for Cloud use as the foundation for custom security standards?
 >Azure Policy initiatives
+
 3.A Defender for Cloud recommendation flags a resource as noncompliant, but the security team confirmed that an alternative compensating control addresses the same risk. The resource should continue to be tracked but excluded from compliance calculations. Which exemption category is appropriate?
 >Mitigated—an alternative control addresses the same risk that the recommendation targets.
 
