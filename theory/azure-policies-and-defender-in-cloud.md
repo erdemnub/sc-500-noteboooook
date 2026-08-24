@@ -144,7 +144,8 @@ Applying locks manually works for known critical resources, but new resources pr
 
 
 
-Q&A
+## Q&A
+
 1.A security engineer assigns an Azure Policy definition with the DeployIfNotExists effect. Existing resources in the subscription don't meet the policy requirement. What must the engineer do to bring those resources into compliance?
 >Create a remediation task that triggers the DeployIfNotExists deployment against the noncompliant resources.
 
