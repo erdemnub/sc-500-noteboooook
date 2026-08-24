@@ -27,10 +27,10 @@ Execute the deployment
 Verify the control is active and the recommendation is resolved
 Four mechanisms deploy security controls at scale:
 
-Fix - Deploy a security configuration automatically to selected resources using Defender for Cloud's built-in remediation logic
-Policy remediation task - Trigger a DeployIfNotExists or Modify policy to configure resources that match the policy condition
-Governance rule - Assign ownership and a compliance deadline to the team responsible for a group of resources
-Exemption - Formally document that a resource is excluded from a specific control with a justified reason
+>Fix - Deploy a security configuration automatically to selected resources using Defender for Cloud's built-in remediation logic
+>Policy remediation task - Trigger a DeployIfNotExists or Modify policy to configure resources that match the policy condition
+>Governance rule - Assign ownership and a compliance deadline to the team responsible for a group of resources
+>Exemption - Formally document that a resource is excluded from a specific control with a justified reason
 
 
 
@@ -49,10 +49,10 @@ The Fix action deploys a security configuration automatically to resources where
 
 DeployIfNotExists policies are common for recommendations that require deploying a child resource or configuration alongside the primary resource. Examples include:
 
-Deploy Azure Monitor Agent to virtual machines
-Configure diagnostic settings to send logs to the central Log Analytics workspace
-Deploy the Defender for Endpoint agent to Windows VMs
-Enable vulnerability assessment on SQL servers
+>Deploy Azure Monitor Agent to virtual machines
+>Configure diagnostic settings to send logs to the central Log Analytics workspace
+>Deploy the Defender for Endpoint agent to Windows VMs
+>Enable vulnerability assessment on SQL servers
 
 
 Governance rules operate at the recommendation level, not the resource level. A single governance rule can cover hundreds of resources across multiple subscriptions if they share the same recommendation. The rule assigns ownership based on conditions—for example, all High severity recommendations on resources in the "Production" resource group are assigned to the platform team with a 14-day remediation deadline.
@@ -62,9 +62,9 @@ Governance rules operate at the recommendation level, not the resource level. A 
 Create Exemptions - formal documentation of excluded controls
 Exemptions remove a resource from the compliance calculation for a specific control without changing the policy or standard for other resources. Exemptions require documented justification and fall into two categories:
 
-Waiver: The risk is accepted. No compensating control exists. Leadership signed off on the exception. The resource doesn't comply with the control, and the organization acknowledges the risk.
+>Waiver: The risk is accepted. No compensating control exists. Leadership signed off on the exception. The resource doesn't comply with the control, and the organization acknowledges the risk.
 
-Mitigated: A compensating control provides equivalent protection. The resource doesn't comply with the specific control, but the underlying risk is addressed through an alternative mechanism.
+>Mitigated: A compensating control provides equivalent protection. The resource doesn't comply with the specific control, but the underlying risk is addressed through an alternative mechanism.
 
 
 
@@ -77,4 +77,16 @@ Recommendation age identifies recommendations open the longest. Governance rules
 Governance report shows the status of governance rule assignments across the organization. The report lists how many recommendations are on track, overdue, or completed. This gives leadership visibility into accountability—teams that consistently meet deadlines demonstrate effective security ownership, while teams with high overdue counts need more support or resources.
 
 Once the security engineer configures standards and deploys remediation controls, the next question is how well the organization meets its regulatory obligations. Module 3 covers evaluating that compliance posture using the regulatory compliance dashboard.
+
+
+
+
+## Q&A
+
+1.A security engineer needs to deploy the required encryption configuration to 400 storage accounts that Defender for Cloud flagged as noncompliant. The same configuration change is needed on every resource. What is the most efficient approach?
+>Use the Fix action on the recommendation to automatically deploy the required configuration to all selected noncompliant resources at once.
+2.Company'S security team creates a custom security standard in Defender for Cloud to enforce internal security policies. What technology does Defender for Cloud use as the foundation for custom security standards?
+>Azure Policy initiatives
+3.A Defender for Cloud recommendation flags a resource as noncompliant, but the security team confirmed that an alternative compensating control addresses the same risk. The resource should continue to be tracked but excluded from compliance calculations. Which exemption category is appropriate?
+>Mitigated—an alternative control addresses the same risk that the recommendation targets.
 
