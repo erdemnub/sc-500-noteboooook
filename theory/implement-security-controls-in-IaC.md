@@ -86,3 +86,13 @@ EPAC provides several key capabilities. You define policy assignments in JSON fi
 
 **Third, assign managed identities to resources instead of service principal credentials. Managed identities eliminate the need to pass credentials through templates entirely, removing a common source of secret exposure in IaC templates.**
 
+
+### Q&A
+1.A security engineer wants to use the Microsoft Security DevOps (MSDO) GitHub Action to scan only infrastructure as code files in a repository, excluding code scanning. Which configuration achieves this?
+>Add categories: 'IaC' in the with: block of the Microsoft Security DevOps GitHub Action
+
+2.A Bicep template passes the IaC scan in a pipeline. The deploying engineer bypasses the pipeline and uses Azure CLI to deploy the template directly to production. Which control prevents the noncompliant resource from being created?
+>Azure Policy with a Deny effect assigned at management group scope blocks the noncompliant resource at the platform level.
+
+3.What is the recommended first step when introducing a new Azure Policy definition in a policy-as-code workflow?
+>Assign the policy definition in Audit effect in a development or test environment and review compliance results before promoting to Deny.
