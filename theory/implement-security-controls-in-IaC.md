@@ -48,7 +48,41 @@ For teams that can't modify pipelines—because of legacy pipeline configuration
 **Agentless scanning works differently from pipeline scanning. Instead of running as a pipeline task, Defender for Cloud scans GitHub and Azure DevOps repositories directly, without any pipeline extension or code change. The scan runs every 24 hours automatically, versus being triggered on every commit like pipeline scanning.**
 
 
-### Enterprise Policy as Code (EPAC) framework.
+### Enterprise Policy as Code (EPAC) framework : 
+
+MSDO scanning protects the pipeline path. Azure Policy with the Deny effect protects EVERY deployment path—it operates at the Azure Resource Manager layer and intercepts all write operations before they're committed to resource state. Together, MSDO and Azure Policy form two independent defense layers that address different threat surfaces. One catches violations during code review. The other catches violations at the moment of deployment, no matter where the deployment originates.
 
 
+
+Azure Policy with the Deny effect blocks noncompliant resource creation or modification at the Resource Manager level. The deployment fails immediately with an error message identifying the violated policy. The key distinction from Module 1 is that Module 1 covered policy enforcement for runtime resources already deployed. In contrast, you learn here how to author and promote policy definitions for IaC governance—a pattern often called policy-as-code.
+
+
+
+### Policy-as-code workflow : 
+Policy-as-code means managing Azure Policy definitions, initiatives, and assignments as source-controlled code rather than as portal-only configurations. The workflow mirrors the same CI/CD practices used for infrastructure templates.
+
+Here's the typical workflow:
+
+Author - write the policy definition JSON (or Bicep equivalent) in source control alongside the IaC templates it governs
+Test in audit mode - assign the policy in a dev or test environment with effect: Audit - observe compliance reports without blocking deployments
+Validate - confirm the policy catches the intended violations and doesn't produce false positives
+Promote to Deny - update the assignment parameter to effect: Deny for production environments (subscriptions or management groups)
+Monitor - use Azure Policy compliance reports to track ongoing compliance
+
+
+
+## Enterprise Policy as Code (EPAC) : 
+
+For organizations with multiple management groups, subscriptions, and teams, manually maintaining hundreds of policy assignments becomes unsustainable. Enterprise Policy as Code (EPAC) is an open-source PowerShell module that manages Azure Policy at management group scale through a CI/CD pipeline.
+
+EPAC provides several key capabilities. You define policy assignments in JSON files that map to management group scopes. EPAC then deploys, updates, and removes assignments consistently across environments using a single pipeline. It tracks desired state—EPAC detects and reports drift between the defined in code goal and the currently assigned in Azure configuration. It also supports GitHub Actions and Azure Pipelines natively, making it easy to integrate into existing workflows
+
+
+### Secure Bicep authoring patterns:
+
+**First, use the @secure() decorator on parameters that hold secrets or credentials. The decorator prevents values from being logged in deployment history, reducing the risk of credential exposure through deployment logs.**
+
+**Second, reference Key Vault secrets using the existing keyword and getSecret() to avoid hardcoding sensitive values in parameter files. Secret references keep secrets centralized in Key Vault instead of scattered across parameter files in source control.**
+
+**Third, assign managed identities to resources instead of service principal credentials. Managed identities eliminate the need to pass credentials through templates entirely, removing a common source of secret exposure in IaC templates.**
 
