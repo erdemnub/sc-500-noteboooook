@@ -112,3 +112,16 @@ A cloud security engineer needs to configure SQL Managed Instance auditing to ro
 >T-SQL CREATE SERVER AUDIT with TO EXTERNAL_MONITOR specified as the destination
 
 
+
+SQL MI
+ 
+Blob Storage
+→ TO URL
+ 
+Log Analytics
+→ TO EXTERNAL_MONITOR
+ 
+Event Hubs
+→ TO EXTERNAL_MONITOR
+
+
