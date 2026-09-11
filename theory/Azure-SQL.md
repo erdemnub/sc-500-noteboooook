@@ -61,4 +61,23 @@ to grant the managed identity access connect to the database as the Microsoft En
 CREATE USER [FraudDetectionFunction] FROM EXTERNAL PROVIDER;
 ALTER ROLE db_datareader ADD MEMBER [FraudDetectionFunction];
 ```
+The first statement creates a contained database user mapped to the managed identity. The name in brackets must match the name of the Azure resource with the managed identity.
+The second statement grants read-only access by adding the user to the db_datareader role. For write access, use db_datawriter, or grant specific permissions using standard GRANT statements.
+
+You can also create user for Microsoft Entra groups, which simplifies permission management when multiple users or services need the same access:
+
+```sql
+CREATE USER [SecurityEngineers] FROM EXTERNAL PROVIDER;
+GRANT VIEW DATABASE STATE TO [SecurityEngineers];
+```
+After you create the database user, the application connection string uses Authentication=Active Directory Managed Identity. No passwords or secrets are needed—the Azure platform handles token acquisition and rotation automatically.
+
+## Attention
+
+**Test managed identity access from the application before disabling SQL authentication.**
+Use **Azure Monitor** or query diagnostics to verify successful authentication events.
+
+
+
+
 
