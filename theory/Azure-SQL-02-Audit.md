@@ -85,5 +85,30 @@ Select Add diagnostic setting
 Enable the SQLSecurityAuditEvents log category
 Choose a destination: Log Analytics workspace or Event Hubs
 
+This support operations audit provides compliance evidence that even Microsoft's privileged access is monitored and recorded. In the Azure portal, navigate to your SQL Managed Instance resource and select Security > Auditing. When creating or editing a server audit, you see a Microsoft support operations option that enables auditing of activities performed by Microsoft engineers during support sessions.
+
+Storage-based audit logs appear as .xel (extended events) files in the blob container, which you open using SQL Server Management Studio's Extended Events viewer. Both storage and external monitor audits can run simultaneously, providing redundancy in case one destination becomes unavailable.
+
+
+
+<img width="2412" height="1255" alt="image" src="https://github.com/user-attachments/assets/1f46ffb2-c689-47ed-857a-9234ee247e3a" />
+
+**With Azure Blob Storage and immutable WORM policies, you create the tamper-resistant compliance record the financial regulator reviews. This destination prioritizes long-term retention, immutability, and availability for audit review. The regulator doesn't query these logs frequently, but when they do, the record must be complete and unaltered.**
+
+**With Azure Monitor Log Analytics, you create the operational monitoring stream the security team queries daily. This destination prioritizes real-time alerting, correlation with other security signals, and investigative queries. The security operations center monitors failed authentication attempts, unusual query patterns, and permission changes using KQL queries against this workspace.**
+
+The built-in policy "Auditing on SQL server should be enabled" uses the Audit effect to identify SQL servers where auditing isn't configured. This policy surfaces noncompliant resources in the Azure Policy compliance dashboard, making gaps visible to the security team. However, it doesn't automatically remediate the issue. The security team must manually enable auditing on flagged resources.
+
+The built-in policy "Configure SQL servers to have auditing enabled to Log Analytics workspace" uses the DeployIfNotExists effect to automatically enable auditing and route logs to a Log Analytics workspace when new SQL servers are created. This policy creates a remediation task for existing noncompliant resources and prevents new resources from being deployed without auditing.
+
+Q&A
+- Company's Azure SQL Database server hosts a high-volume Online Transaction Processing (OLTP) banking application. The security team reports that server-level auditing is causing performance degradation during peak transaction hours. What change resolves this issue?
+>Switch to database-level auditing so each database writes audit logs to its own folder independently
+
+- A financial regulator requires that Contoso's database audit logs can't be altered or deleted after they're written. Which audit destination configuration meets this requirement?
+>Azure Blob Storage with immutable blob storage (WORM) policies configured on the audit container
+
+A cloud security engineer needs to configure SQL Managed Instance auditing to route logs to both Azure Monitor and an Event Hubs. Which configuration method is required for these nonstorage destinations?
+>T-SQL CREATE SERVER AUDIT with TO EXTERNAL_MONITOR specified as the destination
 
 
