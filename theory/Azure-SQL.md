@@ -27,10 +27,38 @@ in azure portal settings > microsoft entra id choosing set admin.
 also azure cli : 
 
 ```bash
-az sql server ad-admin create --resource-group ContosoFinancialRG --server-name contoso-sql-server --display-name "SQL Administrators" --object-id <group-object-id>
+az sql server ad-admin create \
+--resource-group CompanyRG \
+--server-name company-sql-server \   
+--display-name "SQL Administrators" \
+--object-id <group-object-id>
 ```
 
 
+Once enabled, SQL authentication is prevented from connecting at the server level—existing SQL authentication logins and users remain in the system but can't establish connections. New SQL authentication logins can be created by Microsoft Entra accounts with proper permissions, but those accounts also can't connect while Entra-only mode is active. All successful connections must authenticate through Microsoft Entra ID.
 
 
+This configuration brings three security benefits: it eliminates password sprawl by removing local SQL credentials, enables MFA enforcement through Microsoft Entra authentication policies, and allows Conditional Access policies to control access based on location, device compliance, or risk level.
+
+## Attention
+
+**Enabling Entra-only authentication immediately disables all SQL authentication logins. Ensure you have a Microsoft Entra admin configured and tested before enabling this mode in production environments.**
+
+
+ ## Create contained database users for managed identities
+
+Microsoft Entra users and managed identities are added to databases as contained database users, not server logins. A contained database user exists within the database itself and authenticates directly against Microsoft Entra ID. This approach simplifies permission management and aligns with modern cloud identity patterns. 
+
+
+
+
+. System-assigned managed identities are automatically created and lifecycle-tied to the resource—when you delete the Function, the identity is deleted
+
+
+to grant the managed identity access connect to the database as the Microsoft Entra admin and run T-SQL : 
+
+```sql 
+CREATE USER [FraudDetectionFunction] FROM EXTERNAL PROVIDER;
+ALTER ROLE db_datareader ADD MEMBER [FraudDetectionFunction];
+```
 
