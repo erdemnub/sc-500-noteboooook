@@ -1,0 +1,35 @@
+Both databases allow SQL authentication with shared passwords, including credentials used by the AI service. The SQL servers have public endpoints accessible from the internet with only basic firewall protection. Transparent data encryption uses service-managed keys, but regulators require customer-managed keys for financial personal data. Query results expose full account numbers and credit card data to all database users regardless of their role.
+
+
+Microsoft Entra to provide authentication and replace SQL credentials with managed identities for AI workloads
+
+
+https://learn.microsoft.com/en-us/training/wwl-sci/configure-azure-sql-platform-security/media/managed-identity-authentication-flow.png#lightbox,
+
+
+
+Set Microsoft Entra admin   	Assign a user or group as the Microsoft Entra administrator
+Enable Entra-only auth     	Disable SQL Server authentication at the server level
+Create contained users	   Map Microsoft Entra identities or managed identities to database users
+Grant permissions	        Assign roles using standard T-SQL GRANT statements
+
+
+Microsoft Entra ID–only authentication disables SQL logins and SQL Server authentication at the server level. 
+
+When you enable this mode, traditional username-password authentication stops working, and all connections must authenticate using Microsoft Entra credentials.
+Before enabling Entra-only authentication, you must set a Microsoft Entra admin on the logical SQL server or SQL Managed Instance. This admin has full control over the database and can create more Microsoft Entra users.Before enabling Entra-only authentication, you must set a Microsoft Entra admin on the logical SQL server or SQL Managed Instance. This admin has full control over the database and can create more Microsoft Entra users.
+
+
+We have two different options to enable it. 
+
+in azure portal settings > microsoft entra id choosing set admin.
+
+also azure cli : 
+```bash
+az sql server ad-admin create --resource-group ContosoFinancialRG --server-name contoso-sql-server --display-name "SQL Administrators" --object-id <group-object-id>
+```
+
+
+
+
+
