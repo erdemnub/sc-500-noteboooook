@@ -144,6 +144,78 @@ sqlcmd -S contoso-transactions.database.windows.net -U sqladmin -P <password> -Q
 
 **Transparent Data Encryption (TDE) is enabled by default on all Azure SQL databases, protecting data files, logs, and backups at rest using service-managed keys.**
 
+<img width="929" height="1107" alt="image" src="https://github.com/user-attachments/assets/6370f360-e30c-486f-aff3-3a1fc8f54393" />
 
+
+Encryption    layer	Service-managed  	Customer-managed
+Key control	   Microsoft	              Organization
+ Key rotation  Automatic        	Manual or automated
+Compliance support	Basic	Advanced (regulatory)
+Configuration complexity	None	Moderate
+
+**Before you attach a customer-managed key to your SQL server, the Key Vault must meet two mandatory requirements. First, soft-delete must be enabled to prevent accidental key deletion. Second, purge protection must be enabled to block malicious or permanent key deletion. Without these safeguards, losing access to the key makes the database permanently inaccessible.**
+
+**If the Key Vault has a firewall configured, you must enable Allow trusted Microsoft services to bypass the firewall. Without this setting, Azure SQL's managed identity can't retrieve the TDE key and the TDE protector configuration fails. This requirement doesn't apply if the SQL server connects to Key Vault through a private endpoint.**
+
+example steps: 
+1. Create or verify Key Vault: Confirm soft-delete and purge protection are enabled
+2. Generate RSA key :	Create 2048-bit or 3072-bit asymmetric key in Key Vault
+3. Assign managed identity : 	Enable system-assigned or user-assigned identity on SQL server
+4. Grant key permissions : 	Assign Key Vault Crypto Service Encryption User role or access policy with get, wrapKey, unwrapKey
+5. Configure TDE	: Select customer-managed key option and specify the Key Vault key
+
+**After you configure the customer-managed key, TDE continues using AES-256 encryption but wraps the database encryption key (DEK) with your Key Vault key. The SQL server authenticates to Key Vault using its managed identity, retrieves the key, and decrypts the DEK. If the key becomes inaccessible—because of deletion, access is revoked, or the Key Vault is unreachable—the database enters an inaccessible state. Restoring key access allows the database to recover automatically without intervention. Configure Key Vault alerts and diagnostic logging to detect key access failures before they affect database availability.**
+
+**Plan your Key Vault architecture around blast radius and availability. Use separate Key Vaults per environment (development, staging, production) so that a vault issue affects only one tier. Key Vault soft-delete retention runs 7–90 days (default 90 days), which affects how quickly a deleted vault name can be reused. For geo-redundant SQL deployments, plan for vault availability as part of your disaster recovery testing.**
+
+## Secure data in transit with TLS
+
+**With the minimum TLS version set to 1.2, clients using older protocols like TLS 1.0 or 1.1 can't connect. Financial and healthcare regulations typically mandate TLS 1.2 or higher to prevent downgrade attacks and ensure modern cryptographic standards. TLS 1.3 is also available for Azure SQL Database for the highest protocol-level security—regulated workloads where all clients support TLS 1.3 can enforce it as the minimum version. You configure this setting in the Azure portal under your SQL server's Networking screen.**
+
+**The Tabular Data Stream (TDS) protocol carries SQL traffic over TLS. TDS 8.0 with Strict connection encryption provides the highest security by encrypting the entire connection handshake, including authentication credentials. TDS 7.1 remains the minimum supported version for backward compatibility, but Strict encryption is recommended for new deployments and regulated workloads**
+
+(what is TDS protocol which is used to communicate with Microsoft SQL Server. )
+
+## Always Encrypted for column-level protection
+
+<img width="1913" height="853" alt="image" src="https://github.com/user-attachments/assets/136a84f0-5e2e-4ae5-afaa-383e35e226e3" />
+
+
+## Low-level security 
+
+
+
+<img width="1998" height="1048" alt="image" src="https://github.com/user-attachments/assets/4eb17624-55c2-4b11-915f-8df2e37237b9" />
+
+The Azure portal provides an autodetect feature at Database > Security > Dynamic Data Masking that automatically identifies candidate columns based on common patterns—email addresses, credit card numbers, and social security number formats. 
+
+**Azure SQL supports six masking functions**
+>default() -general-purpose
+>email()   
+>creditcard()  - shows last four digits for verification
+>random(min,max)
+>custom_text(prefix,padding)
+>datetime(component)
+
+for example masking to credit card and SSN columns using T-SQL : 
+```bash
+ALTER TABLE [dbo].[Customer]
+ALTER COLUMN CreditCardNumber ADD MASKED WITH (FUNCTION = 'creditcard()');
+
+ALTER TABLE [dbo].[Customer]
+ALTER COLUMN SSN ADD MASKED WITH (FUNCTION = 'default()');
+```
+
+note: **Dynamic data masking protects against casual unauthorized viewing but doesn't prevent determined users with direct query access from discovering masked values through inference attacks. For cryptographic protection, use Always Encrypted.**
+
+## Filter rows with row-level security
+Row-level security (RLS) applies predicate logic to filter which rows users can access. Unlike DDM's portal-based configuration, RLS requires T-SQL to define security functions and policies.
+
+note : **Block predicates aren't supported in Azure Synapse Analytics or Microsoft Fabric—use filter predicates only in these environments.**
+
+
+1.RLS filter predicate reduces the Transactions result set to Retail Banking rows only
+2.DDM creditcard() function masks the CreditCardNumber column in matching Customer rows
+3.DDM default() function masks the SSN column
 
 
