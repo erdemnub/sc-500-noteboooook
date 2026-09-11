@@ -88,4 +88,58 @@ Azure RBAC roles control who can manage SQL resources, but they don't grant acce
 
 **Passing authentication doesn't bypass network rules, and passing network rules doesn't bypass authentication.**
 
+# Network Izolatıon
+
+
+<img width="2116" height="978" alt="image" src="https://github.com/user-attachments/assets/99d65d1e-a158-4227-a7e7-44423015f35d" />
+
+
+
+Private endpoints + disable public access  
+
+use case : Financial services, regulated workloads requiring no public endpoint exposure
+
+Development environments where public endpoint is acceptable with restricted access  approach:
+Virtual network service endpoints + firewall rules
+
+
+## Configure private endpoints for Azure SQL
+
+Private endpoints bring Azure SQL Database into your virtual network address space, eliminating the need for public endpoint access. When you deploy a private endpoint, Azure creates a network interface with a private IP address from your subnet and maps it to your SQL server's fully qualified domain name (FQDN).
+
+ In the Azure portal, navigate to your SQL server, select Security > Networking, and choose Private access. When you add a private endpoint, specify the target subnet and enable automatic private DNS zone integration. Azure creates the privatelink.database.windows.net DNS zone and adds a record that maps your server name to the private IP address.
+
+ The connection policy determines how traffic flows after a private endpoint is deployed. The Proxy policy routes all traffic through port 1433 and is the simplest option for private endpoint deployments—it requires no extra firewall changes and works with existing private endpoints that use the Default policy. The Redirect policy provides lower latency by establishing a direct connection to the database node, but requires clients to open ports 1433 to 65535 for both inbound and outbound communication on the virtual network hosting the private endpoint.
+
+**Existing private endpoints using the Default connection policy fallback to Proxy mode (port 1433 only) to avoid disrupting client traffic. To use Redirect with a private endpoint, explicitly set the connection policy to Redirect after provisioning the endpoint—toggling the policy can be required if it was set before the private endpoint was created.**
+
+**Private endpoint creation requires approval from the SQL administrator. After the network administrator creates the endpoint, the SQL administrator must approve the connection in the SQL server's Private endpoint connections list before it becomes active.**
+
+
+## Disable public network access 
+
+
+The private endpoint alone doesn't prevent public access—both endpoints remain active until you explicitly disable public network access.
+
+SQL server's Networking page and select Public access > Disable. This action blocks all connections from the internet, even if firewall rules permit specific IP addresses. The "Allow Azure services and resources to access this server" setting, which creates a special rule for Azure's internal IP ranges (0.0.0.0–0.0.0.0), no longer applies because the public endpoint is turned off.
+
+**Firewall rule changes can take up to five minutes to propagate across Azure's infrastructure. If you need immediate effect after modifying rules, connect to the database and run the following command:**
+```sql
+DBCC FLUSHAUTHCACHE
+```
+
+## network isolation to SQL Managed Instance
+
+*Unlike Azure SQL Database, SQL MI doesn't require a private endpoint—it's already VNet-native.*
+
+*SQL MI offers an optional public endpoint on port 3342, but it's disabled by default.*
+
+The key difference: Azure SQL Database requires you to add private endpoints and disable public access as separate steps, while SQL Managed Instance starts with private-only connectivity built in.
+
+test connectivity using the same FQDN:
+```bash
+sqlcmd -S contoso-transactions.database.windows.net -U sqladmin -P <password> -Q "SELECT @@VERSION"
+```
+
+
 
