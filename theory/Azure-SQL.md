@@ -25,6 +25,7 @@ We have two different options to enable it.
 in azure portal settings > microsoft entra id choosing set admin.
 
 also azure cli : 
+
 ```bash
 az sql server ad-admin create --resource-group ContosoFinancialRG --server-name contoso-sql-server --display-name "SQL Administrators" --object-id <group-object-id>
 ```
