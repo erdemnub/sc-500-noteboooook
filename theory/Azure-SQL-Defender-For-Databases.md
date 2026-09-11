@@ -101,4 +101,25 @@ Express configuration is the recommended approach for vulnerability assessment b
 
 **To enable express configuration, navigate to Microsoft Defender for Cloud, select your SQL server or SQL managed instance resource, open the Defender for Cloud screen, and select Vulnerability assessment. Select Configure, then select Express.**
 
+## Configure alert routing 
+<img width="2082" height="888" alt="image" src="https://github.com/user-attachments/assets/21b467ab-2ee1-4f0f-8c5a-b144fc2f94fb" />
+
+### Configure email notifications for immediate awareness
+>Email notifications provide the fastest path to awareness when Defender for Databases detects a threat
+### Connect to Microsoft Sentinel for centralized incident management
+>While email provides immediate awareness, Microsoft Sentinel offers centralized incident management that the SOC team uses to track investigations across multiple alert sources
+
+
+
+
+Q&A
+
+1.Company's cloud security team needs to protect both Azure SQL Managed Instance and Azure Database for MySQL. Which Defender for Databases plan selection correctly covers both services?
+>Defender for Azure SQL Databases for SQL Managed Instance, and Defender for open-source relational databases for Azure Database for MySQL
+
+2.A security engineer enables Defender for Azure SQL Databases at subscription scope. Which statement correctly describes the resulting coverage behavior?
+>All existing and future Azure SQL resources in the subscription receive protection automatically
+
+3. A cloud security engineer runs a vulnerability assessment on Contoso's Azure SQL Database and sees several findings. Some findings represent accepted configurations, such as broad read permissions for an internal reporting service account. What is the correct action to prevent these known findings from appearing as open issues?
+>Set a baseline for the findings to mark the accepted configurations as known and expected
 
