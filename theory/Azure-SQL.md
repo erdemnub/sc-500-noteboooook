@@ -140,6 +140,10 @@ test connectivity using the same FQDN:
 ```bash
 sqlcmd -S contoso-transactions.database.windows.net -U sqladmin -P <password> -Q "SELECT @@VERSION"
 ```
+# Encrypt and protect data in transit and at rest
+
+**Transparent Data Encryption (TDE) is enabled by default on all Azure SQL databases, protecting data files, logs, and backups at rest using service-managed keys.**
+
 
 
 
