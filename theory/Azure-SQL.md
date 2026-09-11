@@ -78,6 +78,14 @@ After you create the database user, the application connection string uses Authe
 Use **Azure Monitor** or query diagnostics to verify successful authentication events.
 
 
+# Azure RBAC roles for SQL security management
+Azure RBAC roles control who can manage SQL resources, but they don't grant access to data inside databases. This separation ensures that management permissions don't automatically grant data access—a principle of least privilege
 
+
+**The SQL Security Manager** role (ID: 056cd41c-7e88-42e1-933e-88ba6a50c9c3) grants permissions to manage security policies including firewall rules, encryption settings, auditing configuration, dynamic data masking, and row-level security. This role is designed for security engineers who configure security controls but don't need to read or modify data. With this role, you configure authentication settings like the Microsoft Entra admin and enable Entra-only authentication.
+
+**the SQL Server Contributor role** manages SQL servers and databases but doesn't grant security policy management. **The SQL DB Contributor role** manages individual databases but also lacks security policy permissions. 
+
+**Passing authentication doesn't bypass network rules, and passing network rules doesn't bypass authentication.**
 
 
