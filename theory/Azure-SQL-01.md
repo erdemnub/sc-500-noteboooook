@@ -219,3 +219,14 @@ note : **Block predicates aren't supported in Azure Synapse Analytics or Microso
 3.DDM default() function masks the SSN column
 
 
+
+Q&A
+
+-Company's fraud detection AI service needs to query Azure SQL Database. Which authentication approach eliminates credential management while maintaining least-privilege access?
+>A system-assigned managed identity with a Microsoft Entra ID contained database user mapped to the identity
+
+-A cloud security engineer is configuring transparent data encryption with customer-managed keys for a regulated banking database. Which two Azure Key Vault settings are mandatory before the key can be attached to Azure SQL?
+>Soft-delete and purge protection must both be enabled on the Key Vault
+
+-A database administrator needs to prevent customer service representatives from seeing full credit card numbers in query results, while allowing the finance team to view unmasked values. Which Azure SQL feature provides granular column-level unmask permissions?
+>Dynamic data masking with GRANT UNMASK permissions scoped to the specific column
