@@ -141,9 +141,9 @@ az vm create \
 --admin-username azureuser \
 --generate-ssh-keys
 ```
-
-*The DiskWithVMGuestState value encrypts the OS disk along with the VM Guest State blob (vTPM and UEFI state), providing full confidential OS disk encryption with vTPM binding. Use VMGuestStateOnly only when you want a confidential VM without OS disk confidential encryption—it protects only the VM Guest State blob and leaves the OS disk using standard server-side encryption. Combine DiskWithVMGuestState with --encryption-at-host to protect both the OS disk (confidential encryption) and data disks and temp storage (encryption at host) comprehensively.*
----
+-
+The DiskWithVMGuestState value encrypts the OS disk along with the VM Guest State blob (vTPM and UEFI state), providing full confidential OS disk encryption with vTPM binding. Use VMGuestStateOnly only when you want a confidential VM without OS disk confidential encryption—it protects only the VM Guest State blob and leaves the OS disk using standard server-side encryption. Combine DiskWithVMGuestState with --encryption-at-host to protect both the OS disk (confidential encryption) and data disks and temp storage (encryption at host) comprehensively
+-
 ### Limitations and considerations
 
 Confidential VMs with confidential disk encryption have specific operational constraints:
