@@ -141,9 +141,6 @@ az vm create \
 --admin-username azureuser \
 --generate-ssh-keys
 ```
--
-The DiskWithVMGuestState value encrypts the OS disk along with the VM Guest State blob (vTPM and UEFI state), providing full confidential OS disk encryption with vTPM binding. Use VMGuestStateOnly only when you want a confidential VM without OS disk confidential encryption—it protects only the VM Guest State blob and leaves the OS disk using standard server-side encryption. Combine DiskWithVMGuestState with --encryption-at-host to protect both the OS disk (confidential encryption) and data disks and temp storage (encryption at host) comprehensively
--
 ### Limitations and considerations
 
 Confidential VMs with confidential disk encryption have specific operational constraints:
@@ -164,8 +161,7 @@ Defense against physical theft: Industries with extremely high-value intellectua
 
 Attestation requirements: Applications needing cryptographic proof that they run in an uncompromised environment use the attestation capabilities built into confidential VMs.
 
-Zero Trust architecture: Organizations implementing Zero Trust principles apply confidential VMs to protect high-value assets from both external attackers and insider threats, reducing the trusted perimeter to only the workload itself.
----
+Zero Trust architecture: Organizations implementing Zero Trust principles apply confidential VMs to protect high-value assets from both external attackers and insider threats, reducing the trusted perimeter to only the workload itself
 
 ### Q&A
 Which disk encryption approach is recommended for new Azure virtual machines and provides end-to-end encryption that covers temp disks, disk caches, and data flows to storage?
@@ -219,8 +215,54 @@ Trusted Launch is now the default security type for new Gen2 virtual machines cr
 
 <img width="1088" height="431" alt="image" src="https://github.com/user-attachments/assets/e21faedb-4743-4a32-a401-3dbcf77e617e" />
 
+### Upgrade an existing Gen2 VM to Trusted Launch
+ If the VM uses Azure Backup, verify that it uses an Enhanced backup policy rather than a Standard backup policy. 
+
+
+### Migrate a Gen1 VM to Gen2 with Trusted Launch
+
+Gen1 virtual machines require migration to Gen2 architecture before Trusted Launch can be enabled
+Azure doesn't support migrating Gen1 to Gen2 without enabling Trusted Launch—the two changes must happen together.
+
+Gen1 VMs use a Main Boot Record (MBR) disk layout, but Gen2 requires GUID Partition Table (GPT) with an Extensible Firmware Interface (EFI) system partition. On Windows, use the built-in MBR2GPT.exe utility to convert the disk layout before initiating the upgrade. Linux VMs require equivalent GPT conversion steps.
+
+**Windows Server 2016 doesn't include MBR2GPT.exe and isn't supported for the Gen1 to Trusted Launch upgrade path. If your VM runs Windows Server 2016, first perform an in-place OS upgrade to Windows Server 2019 or 2022, then run MBR2GPT conversion. Azure Linux and Debian are also excluded from the Gen1 to Trusted Launch upgrade path.**
+
+**The Gen1 to Trusted Launch upgrade can't be rolled back to Gen1 configuration. If rollback is needed, you must restore from a backup or restore point taken before the upgrade**
 
 
 
+### Configure individual security components
+
+<img width="843" height="623" alt="image" src="https://github.com/user-attachments/assets/4485ced9-bb58-4618-ac0f-5aa29f68c8fa" />
+
+### Enforce Trusted Launch adoption with Azure Policy
+
+<img width="910" height="336" alt="image" src="https://github.com/user-attachments/assets/d9ab41df-be97-485f-901e-b9e4039c1a05" />
+
+
+### Use the Trusted Launch eligibility policy
+
+The "Disks and OS image should support TrustedLaunch" policy identifies Gen2 virtual machines that have compatible operating systems and VM sizes for Trusted Launch upgrade. This eligibility assessment policy evaluates each VM's current configuration against Trusted Launch requirements without making assumptions about intent.
+
+The policy checks:
+
+VM generation (must be Gen2)
+Operating system compatibility (current OS supports Trusted Launch)
+VM size compatibility (current size supports Trusted Launch security features)
+VMs that meet all criteria appear as Compliant in the policy compliance report. VMs that fail one or more checks appear as Non-compliant. The policy uses an Audit effect, which means it evaluates and reports compliance but doesn't block VM creation or modification.
+
+
+
+### Use the Trusted Launch security configuration policy
+The "Virtual Machine should have TrustedLaunch enabled" policy audits whether VMs actually have Trusted Launch configured as their security type. This policy focuses on security configuration rather than eligibility—it identifies VMs that could have Trusted Launch but currently use Standard security.
+
+The policy evaluates the VM's security type property. VMs with security type set to TrustedLaunch appear as Compliant. VMs with security type set to Standard appear as Non-compliant.
+
+This policy supports two effects:
+
+Audit: Evaluate and report compliance without blocking actions
+Disabled: Don't evaluate the policy
+In Audit mode, the policy evaluates VMs and reports noncompliance but doesn't block VM creation or modification. This allows you to identify which VMs in your estate are using Standard security and are candidates for upgrade, without disrupting ongoing deployments.
 
 
