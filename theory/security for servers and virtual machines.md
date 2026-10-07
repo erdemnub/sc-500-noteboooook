@@ -59,19 +59,19 @@ az vm create
 ```
 
 ### Enable encryption at host on existing VMs
-# Stop and deallocate the VM
+Stop and deallocate the VM
 ```bash
 az vm deallocate --resource-group contoso-mfg-rg --name legacy-factory-vm-03
 ```
-# Enable encryption at host
+ Enable encryption at host
 ```bash
 az vm update --resource-group contoso-mfg-rg --name legacy-factory-vm-03 --set securityProfile.encryptionAtHost=true
 ```
-# Update OS disk to use customer-managed key
+ Update OS disk to use customer-managed key
 ```bash
 az vm update --resource-group contoso-mfg-rg --name legacy-factory-vm-03 --set storageProfile.osDisk.managedDisk.diskEncryptionSet.id=/subscriptions/{subscription-id}/resourceGroups/contoso-security-rg/providers/Microsoft.Compute/diskEncryptionSets/contoso-mfg-des-eastus2
 ```
-# Start the VM
+ Start the VM
 ```bash
 az vm start --resource-group contoso-mfg-rg --name legacy-factory-vm-03
 ```
