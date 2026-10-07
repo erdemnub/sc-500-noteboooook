@@ -279,3 +279,140 @@ An administrator needs to enable Trusted Launch on an existing Generation 1 virt
 A compliance team wants to ensure that all new Gen2 VMs deployed to a subscription are created with Trusted Launch enabled. They also want to identify existing Gen2 VMs that are eligible but not yet configured. Which combination of Azure Policy effects achieves both goals?
 >Apply the Audit effect to the eligibility policy and the Deny effect to the configuration policy
 
+
+
+
+## Implement Azure Bastion
+
+**Azure Bastion provides browser-based and native client connectivity through encrypted TLS 443 connections, eliminating the need for public IP addresses on virtual machines and open management ports in network security groups.** RDP or SSH session from the Bastion host directly to the target VM over the Azure backbone network.
+
+### Bastion SKU
+
+<img width="906" height="490" alt="image" src="https://github.com/user-attachments/assets/020ee1a3-dfc7-43cb-b144-6db3e24d3b4c" />
+
+he Developer SKU provides no-cost access for individual users during development and testing. This tier supports a single concurrent user and lacks scaling capabilities, making it unsuitable for production team environments.
+
+The Basic SKU offers browser-based access through its fixed allocation of 2 host units, supporting up to 40 concurrent RDP sessions or 80 concurrent SSH sessions. Users connect through the Azure portal using the browser-based RDP or SSH client. This tier works well for small teams that don't require native RDP client features or significant scaling.
+
+The Standard SKU adds native client support, IP-based connections, and configurable scaling from 2 to 50 host units. Native client support allows users to connect using their existing RDP clients (such as Microsoft Remote Desktop or Windows App) and SSH tools through an Azure CLI tunnel command. IP-based connections enable administrators to connect to virtual machines by specifying an IP address rather than selecting from the portal's VM list, which proves essential for hub-spoke architectures where Bastion in the hub virtual network provides access to spoke VNets through peering. Shareable links provide time-limited URL-based access for users without Azure portal credentials, useful for contractor or vendor scenarios.
+
+The Premium SKU adds session recording capabilities that capture complete RDP and SSH session activity to an Azure Storage account for compliance and security auditing. Private-only mode removes the public IP address requirement from the Bastion host itself for air-gapped or highly restricted network environments.
+
+### network architecture
+
+Azure Bastion deploys into a dedicated subnet within an Azure virtual network. This subnet must be named exactly AzureBastionSubnet and sized with a minimum /26 prefix (64 IP addresses). The /26 minimum ensures sufficient address space for the Bastion service infrastructure and future scaling requirements.
+
+Organizations with hub-spoke network topologies face a deployment choice: deploy Bastion in the hub virtual network to serve all spoke VNets, or deploy separate Bastion instances in each spoke virtual network. A hub deployment reduces costs (one Bastion host instead of many) and simplifies management, but requires Standard or Premium SKU with IP-based connection capability. The Bastion host in the hub connects to VMs in spoke VNets through VNet peering relationships. With IP-based connections enabled, administrators specify the target VM's IP address directly rather than selecting from the portal's resource list.
+
+Per-VNet deployment provides isolation and removes dependencies on virtual network peering, but multiplies costs and administrative overhead. This approach makes sense for VNets with strict isolation requirements or when different teams manage separate VNets independently.
+
+**Azure Bastion requires a Standard SKU static public IP address for inbound connectivity from user clients.**
+
+The AzureBastionSubnet requires a network security group with specific inbound and outbound rules. Inbound rules must allow HTTPS (port 443) from the internet to permit user connections, and allow port 443 from the GatewayManager service tag to enable Azure control plane operations. Outbound rules must allow traffic to target VMs on ports 3389 (RDP) and 22 (SSH), and allow port 443 to the AzureCloud service tag for Azure service dependencies.
+
+These NSG requirements differ from typical subnet NSGs because they accommodate both user-facing traffic (inbound 443 from Internet) and backend service communication (GatewayManager, AzureCloud). Restrictive NSGs that block these required flows prevent Bastion from functioning.
+
+### Deploy and Configure Azure Bastion
+
+The deployment process requires a dedicated subnet named exactly AzureBastionSubnet with a minimum /26 address prefix. This subnet name is case-sensitive and mandatory—the Bastion deployment fails if the subnet has any other name.
+
+
+
+```bash
+az network bastion tunnel
+```
+
+inbound rules:
+
+<img width="897" height="263" alt="image" src="https://github.com/user-attachments/assets/e42eb267-958b-4fde-b400-675efd85bbf8" />
+
+outbound rules: 
+
+<img width="914" height="256" alt="image" src="https://github.com/user-attachments/assets/7ba5a744-dfc7-40b2-9db0-8b996510331f" />
+
+
+### Connect to VMs through Azure Bastion
+```bash
+az extension add --name bastion
+```
+
+after : 
+
+```bash
+az network bastion tunnel \
+ --name bastion-hub-prod\
+ --resource-group rg-network-prod\
+--target-resource-id /subscriptions/<subscription-id>/resourceGroups/<vm-rg>/providers/Microsoft.Compute/virtualMachines/<vm-name> \
+ --resource-port 3389\
+ --port 50001\
+```
+
+For ssh connections , 
+```bash
+az network bastion ssh
+--name bastion-hub-prod\
+--resource-group rg-network-prod\
+--target-resource-id /subscriptions/<subscription-id>/resourceGroups/<vm-rg>/providers/Microsoft.Compute/virtualMachines/<vm-name> \
+ --auth-type password\
+ --username azureuser
+```
+
+
+ ### use shareable links
+
+The portal generates a URL that provides direct browser-based access to the VM through Bastion.
+
+Configure the shareable link properties:
+
+Expiration time: Set how long the link remains valid (maximum 90 days)
+Allowed credentials: Optionally restrict which VM credentials can authenticate through the link
+Description: Add notes about the link's purpose for audit records
+Share the generated URL with the intended recipient. When they open the URL, they see a connection form requesting VM credentials. After authentication, the browser establishes a Bastion session identical to the standard browser-based connection experience.
+
+
+Revoked links immediately stop working, terminating any active sessions using those links.
+
+
+Q&A 
+
+A security engineer needs to deploy Azure Bastion to support native RDP client connections and IP-based connections to VMs, but doesn't require session recording. Which SKU meets these requirements at the lowest cost?
+>Standard
+
+
+What is the minimum subnet size required for the AzureBastionSubnet in an Azure virtual network?
+>/26
+
+An organization wants to provide a contractor with browser-based RDP access to a specific development VM, but the contractor doesn't have an Azure portal account. Which Azure Bastion feature enables this without granting Azure access?
+>Shareable link
+
+### SKU selection balances capability requirements against cost:
+
+Developer: Individual use, no host unit charges, browser-only
+Basic: Small teams, fixed two host units, browser-only, no native client
+Standard: Enterprise scale, configurable host units, native client support, IP-based connections
+Premium: Compliance environments add session recording and private-only mode
+
+
+---
+
+
+
+
+
+
+## Manage Security for Arc-Enabled hybrid servers
+
+Use RBAC to control Arc server management.
+
+Azure provides two specialized built-in roles for Arc-enabled server management. 
+
+The Azure Connected Machine Onboarding role grants the minimum privilege needed to connect servers to Azure Arc. Users or service principals with this role can create new Arc server resources but can't reonboard, delete, or modify existing resources. 
+
+The Azure Connected Machine Resource Administrator role grants full control over Arc-enabled servers, including the ability to deploy and remove extensions. Because extensions run with elevated privileges on the target machine, this role effectively grants root or administrator access to the underlying server.
+
+
+
+
+
+
+
