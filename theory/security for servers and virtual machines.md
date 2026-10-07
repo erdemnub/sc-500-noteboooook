@@ -463,5 +463,50 @@ Preview policies such as vTPM should be enabled on supported virtual machines an
 Some built-in policies apply exclusively to Azure virtual machines, some target only Arc-enabled servers, and some cover both resource types. Review the policy definition's description and the if condition clause to determine applicability. Policies that reference "type": "Microsoft.Compute/virtualMachines" affect only Azure VMs, while those referencing "type": "Microsoft.HybridCompute/machines" target Arc servers. Policies with both conditions in an anyOf block cover hybrid and cloud resources 
 
 
+Prepare for machine configuration policies
+Azure Machine Configuration policies (formerly Azure Guest Configuration) assess and enforce configurations inside the operating system, such as registry settings, file permissions, installed software, and service states. These policies use the Machine Configuration extension, which runs on both Azure VMs and Arc-enabled servers. You can assign machine configuration policies to Arc servers through the same Azure Policy mechanism described in this unit. Module 7 covers machine configuration in depth, including how to create custom policies for organization-specific security requirements.
+
+### Review security recommendations for Arc servers
+
+Defender for Cloud assesses Arc-enabled servers using the same security controls applied to Azure VMs. Recommendations appear in the Recommendations pane organized by severity: High, Medium, and Low.
+
+**Common recommendations for Arc servers include:**
+
+Install endpoint protection solution on machines - prompts deployment of Microsoft Defender for Endpoint (MDE) via the MDE extension
+System updates should be installed on your machines - identifies missing security patches and provides remediation guidance through Azure Update Manager integration
+Machines should be configured securely - indicates noncompliance with OS security baselines, requiring Machine Configuration extension for detailed assessment
+Recommendations that require extensions to provide detailed findings automatically deploy those extensions if you assigned the corresponding Azure Policy with DeployIfNotExists effect.
+
+### investigate security alerts for arc servers 
+ if an attacker compromises an Arc server and uses it to probe Azure storage accounts, Defender for Cloud links the related alerts into a single incident, accelerating investigation and response.
+
+Alert severity levels (High, Medium, Low, Informational) help you prioritize investigation. High-severity alerts indicate active exploitation or critical security violations requiring immediate action. Configure alert notifications to send high-severity alerts to your security operations center (SOC) via email, webhook, or integration with Microsoft Sentinel.
+
+
+
+Q&A
+ A security team wants to prevent any extensions except the Microsoft Defender for Endpoint extension from being installed on Arc-enrolled servers—even if a privileged Azure user approves the installation. Which control achieves this protection that Azure Policy alone can't provide?
+>The allow list for the extension, is configured on the Azure Connected Machine agent
+
+An organization uses Azure Arc to manage on-premises servers. A team member needs to onboard new servers to Arc but must not be able to modify existing server configurations or install extensions. Which built-in role should be assigned?
+>Azure Connected Machine Onboarding
+
+
+After Arc-enrolling Contoso Manufacturing's on-premises servers, a security engineer checks Microsoft Defender for Cloud and sees the servers listed in security recommendations. What does this confirm?
+>The Azure Connected Machine agent is installed and the servers are visible to Defender for Cloud's posture assessment
+
+Key security decisions
+Effective Arc server security requires layered controls operating at multiple enforcement points:
+
+>Agent-level extension controls cannot be overridden by cloud users, providing immutable protection against insider threats and compromised privileged accounts. Cloud-based Azure Policy provides ease of management and visibility but allows users with sufficient permissions of make modifications. Use both controls together.
+
+>Azure Policy assigned at management group scope covers all subscriptions automatically, reducing configuration drift, and ensuring consistent security posture as infrastructure scales. DeployIfNotExists policies automate extension deployment and configuration, but require remediation tasks for existing resources.
+
+>Defender for Cloud treats Arc-enabled servers as first-class resources, providing unified security recommendations, regulatory compliance tracking, and security alert correlation across Azure and on-premises environments. Arc servers running legacy operating systems receive Extended Security Updates at no extra cost, reducing risks from unpatched vulnerabilities.
+
+>Role-based access control separates enrollment privileges from operational management. Use the Azure Connected Machine Onboarding role for server registration automation and the Azure Connected Machine Resource Administrator role (with PIM) for operational tasks requiring extension deployment.
+
+
+
 
 
