@@ -266,3 +266,16 @@ Disabled: Don't evaluate the policy
 In Audit mode, the policy evaluates VMs and reports noncompliance but doesn't block VM creation or modification. This allows you to identify which VMs in your estate are using Standard security and are candidates for upgrade, without disrupting ongoing deployments.
 
 
+**Critical consideration: VMs must be stopped and deallocated for remediation to succeed. Remediation tasks don't automatically stop running VMs—if the VM is running when the task executes, remediation fails.**
+
+
+Q&A 
+A security engineer notices that a Gen2 VM has Trusted Launch enabled as its security type, but Microsoft Defender for Cloud isn't generating boot integrity alerts even after a suspected boot kit infection. Which Trusted Launch component is most likely not configured correctly?
+>Integrity monitoring
+
+An administrator needs to enable Trusted Launch on an existing Generation 1 virtual machine that runs a supported Windows Server workload. What is the correct approach
+>Migrate the VM to Generation 2 using the in-place upgrade process. The process converts the disk from Main Boot Record (MBR) to GUID Partition Table (GPT) and updates the firmware to UEFI.
+
+A compliance team wants to ensure that all new Gen2 VMs deployed to a subscription are created with Trusted Launch enabled. They also want to identify existing Gen2 VMs that are eligible but not yet configured. Which combination of Azure Policy effects achieves both goals?
+>Apply the Audit effect to the eligibility policy and the Deny effect to the configuration policy
+
