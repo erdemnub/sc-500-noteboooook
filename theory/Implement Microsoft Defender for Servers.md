@@ -47,10 +47,33 @@ The extension appears in the Azure portal with the name MDE.Windows on Windows V
 
  ### Configure agentless scanning capabilities for Plan 2
 
+ Software inventory catalogs every installed application, package, and component on scanned VMs. The inventory data feeds into Defender for Cloud's asset management views, giving you a complete picture of what software runs across your server estate. This visibility helps you identify unauthorized software installations, locate machines running deprecated frameworks, and track software version distribution across environments.
+
+Vulnerability assessment uses the same Defender Vulnerability Management engine that powers agent-based scanning. During disk analysis, the agentless scanner identifies installed software versions, compares them against vulnerability databases, and reports exploitable weaknesses. The findings appear alongside agent-based vulnerability results in the Defender portal, providing redundant coverage that persists even if the agent is disabled or removed.
+
+Secrets scanning analyzes disk contents to identify exposed credentials, API keys, certificates, connection strings, and other secrets that could grant attackers unauthorized access to systems and data. The scanner examines configuration files, scripts, environment variable files, and application directories where developers commonly store secrets during development but forget to remove before deploying to production. When secrets are detected, Defender for Cloud generates high-severity alerts with remediation guidance.
+
+Malware scanning inspects files in the disk snapshot to detect malicious code, backdoors, rootkits, and other indicators of compromise. This capability is exclusive to Defender for Servers Plan 2—it isn't available if you enable agentless scanning through Defender CSPM alone. The offline analysis approach means the scanner can detect dormant malware that isn't actively running, fileless malware artifacts stored on disk, and malicious code that might evade runtime detection by hiding in encrypted archives or obfuscated scripts.
+
+
+Agentless scanning supports not only Azure VMs but also AWS EC2 instances and GCP compute instances connected through Defender for Cloud's multicloud onboarding
+
+### Enable and configure File Integrity Monitoring
+File Integrity Monitoring (FIM) detects unauthorized changes to operating system files, Windows registries, application software files, and Linux system files. These changes might indicate an attack in progress—for example, an attacker modifying system binaries for establishing persistence, altering registry keys to disable security controls, or tampering with application configuration files to redirect data flows.
+
+**FIM requires Defender for Servers Plan 2 and has one core prerequisite: the Microsoft Defender for Endpoint agent must be deployed to the VM through the Defender for Servers extension**
+
+Q&A
+
+ A security engineer enables Defender for Servers Plan 2 on a subscription. Which capability is automatically enabled by default that isn't available in Plan 1?
  
+>Agentless scanning for machines
 
+Agentless machine scanning in Defender for Servers Plan 2 runs on what schedule, and what happens to VMs that are powered off during a scan?
+>Once every 24 hours; powered-off VMs aren't scanned during that cycle
 
-
+A VM has both the Defender for Endpoint agent (enabling agent-based vulnerability scanning) and agentless scanning enabled. Which vulnerability assessment results are displayed in Defender for Cloud?
+>Results from agent-based scanning only, because it provides better freshness
 
 
 
