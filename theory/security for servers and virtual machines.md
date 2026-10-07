@@ -142,7 +142,7 @@ az vm create \
 --generate-ssh-keys
 ```
 
-**The DiskWithVMGuestState value encrypts the OS disk along with the VM Guest State blob (vTPM and UEFI state), providing full confidential OS disk encryption with vTPM binding. Use VMGuestStateOnly only when you want a confidential VM without OS disk confidential encryption—it protects only the VM Guest State blob and leaves the OS disk using standard server-side encryption. Combine DiskWithVMGuestState with --encryption-at-host to protect both the OS disk (confidential encryption) and data disks and temp storage (encryption at host) comprehensively.**
+*The DiskWithVMGuestState value encrypts the OS disk along with the VM Guest State blob (vTPM and UEFI state), providing full confidential OS disk encryption with vTPM binding. Use VMGuestStateOnly only when you want a confidential VM without OS disk confidential encryption—it protects only the VM Guest State blob and leaves the OS disk using standard server-side encryption. Combine DiskWithVMGuestState with --encryption-at-host to protect both the OS disk (confidential encryption) and data disks and temp storage (encryption at host) comprehensively.*
 ---
 ### Limitations and considerations
 
@@ -178,6 +178,46 @@ A confidential VM uses which mechanism to bind disk encryption keys, ensuring th
 >The VM's virtual Trusted Platform Module (vTPM)
 
 
+## Identify Trusted Launch components and VM security types
+
+<img width="918" height="264" alt="image" src="https://github.com/user-attachments/assets/f5cdf0d6-ed19-4323-899f-9173eaba274f" />
+
+### Compare VM security types
+
+Standard security represents the traditional VM configuration with no built-in boot integrity protection. Gen1 virtual machines use Standard security by default and can't be upgraded to other security types without first migrating to Gen2. Standard VMs rely entirely on operating system and application-layer security controls—the boot process remains unverified and unmonitored.
+
+Trusted Launch security provides boot integrity verification through Secure Boot, vTPM, and integrity monitoring. This security type is now the default for new Gen2 virtual machines created in the Azure portal. Trusted Launch VMs measure and verify the boot process but don't encrypt memory or provide confidential computing guarantees.
+
+Confidential VM security extends Trusted Launch protections by adding memory encryption and isolation using AMD SEV-SNP or Intel TDX technology. Confidential VMs protect data in use, not just at boot time. This security type requires specific VM sizes and incurs higher compute costs.
+
+<img width="1383" height="1376" alt="image" src="https://github.com/user-attachments/assets/1ae4878b-bc73-48b8-8573-979f9c74472f" />
+
+**Secure Boot**: This protection blocks unsigned or maliciously modified boot components from executing. Rootkits and boot kits that modify the boot loader, kernel, or early-loading drivers fail signature validation and can't compromise the system
+
+### Virtual Trusted Platform Module (vTPM)
+The virtual Trusted Platform Module provides a dedicated, hardware-backed secure vault for each VM. The vTPM is fully compliant with TPM 2.0 specifications and operates independently from the guest operating system.
+
+These measurements are stored in Platform Configuration Registers (PCRs) inside the vTPM. Because the vTPM is isolated from the guest OS, malware can't tamper with the measurements. The cryptographic record provides irrefutable evidence of what code executed during boot.
+The vTPM enables remote attestation, a process where the VM cryptographically proves to an external verifier that it booted with authorized components. 
+
+### Integrity monitoring
+Integrity monitoring connects the vTPM measurements to Microsoft Defender for Cloud by installing the Guest Attestation extension on the VM. This extension continuously retrieves boot measurements from the vTPM and sends them to Azure's attestation service for validation.
+
+When boot integrity fails—for example, if Secure Boot is disabled or an unmeasured component loads—the attestation service detects the mismatch between actual and expected measurements. Defender for Cloud generates a security alert that appears in the Azure portal and triggers any configured alert actions such as email notifications or Logic App workflows.
+
+Integrity monitoring transforms the vTPM's local measurements into actionable security intelligence. Without this component, boot integrity failures would remain invisible to security operations teams.
+
+**The three Trusted Launch components create a layered defense against boot-level threats. Secure Boot prevents unauthorized code from executing. vTPM measures what executed during boot. Integrity monitoring surfaces failures to security teams.**
+
+Trusted Launch is now the default security type for new Gen2 virtual machines created through the Azure portal. When you create a Gen2 VM, Secure Boot and vTPM are enabled by default.
+
+**Gen1 virtual machines use Standard security and require migration to Gen2 before Trusted Launch can be enabled. Azure doesn't support upgrading a Gen1 VM to Trusted Launch while remaining Gen1—you must migrate the VM to Gen2 architecture first.**
+
+### Trusted Launch on new and existing Gen2 VMs
+
+<img width="910" height="202" alt="image" src="https://github.com/user-attachments/assets/47a978fb-d7f7-493d-882c-2ac7375bc26d" />
+
+<img width="1088" height="431" alt="image" src="https://github.com/user-attachments/assets/e21faedb-4743-4a32-a401-3dbcf77e617e" />
 
 
 
