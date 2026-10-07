@@ -35,6 +35,3 @@ Confidential virtual machines provide hardware-based isolation using AMD SEV-SNP
 
 Confidential VMs use DCasv5 or ECasv5 series sizes and require the security type set to "Confidential virtual machine" at creation time. You can't convert existing standard VMs to confidential VMs. 
 
-### compliance with Azure Policy
-Windows virtual machines should enable Azure Disk Encryption or EncryptionAtHost - Audits Windows VMs where ADE and encryption at host isn't enabled
-Linux virtual machines should enable Azure Disk Encryption or EncryptionAtHost - Audits Linux VMs where ADE and encryption at host isn't enabled
