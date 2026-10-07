@@ -410,8 +410,57 @@ The Azure Connected Machine Onboarding role grants the minimum privilege needed 
 
 The Azure Connected Machine Resource Administrator role grants full control over Arc-enabled servers, including the ability to deploy and remove extensions. Because extensions run with elevated privileges on the target machine, this role effectively grants root or administrator access to the underlying server.
 
+<img width="916" height="309" alt="image" src="https://github.com/user-attachments/assets/19a59873-5c4f-4102-bc12-2b547a6e7178" />
+
+Extension lists are configured using the azcmagent config command on the Arc-enabled server itself. The agent enforces these lists locally, and Azure users can't override them, regardless of permissions. This agent-level control provides a security boundary independent of cloud-based access management.
+
+An allow list specifies which extensions are permitted to install. When an allow list is configured, any extension not explicitly listed is blocked, even if a privileged Azure user requests deployment. Extension identifiers use the format Publisher/Type with a forward slash separator—for example, Microsoft.Azure.Monitor/AzureMonitorLinuxAgent. The command azcmagent config set extensions.allowlist "Microsoft.Azure.Monitor/AzureMonitorLinuxAgent,Microsoft.Azure.AzureDefenderForServers/MDE.Linux" permits only the Azure Monitor Agent and Microsoft Defender for Endpoint extensions on a Linux server.
+
+A block list specifies extensions that are explicitly prohibited. All other extensions remain permitted. Use a block list when you want to allow most extensions but prevent specific ones known to conflict with your environment or security requirements.
+
+The special value "Allow/None" creates a zero-extension mode where the agent runs and maintains connectivity to Azure but refuses all extension installation requests. This configuration is useful when Arc enrollment serves only to deliver Extended Security Updates (ESU) for legacy Windows Server instances, with no need for other management capabilities
+
+### Use monitor mode for monitoring and security scenarios
+
+```bash
+azcmagent config set config.mode monitor
+```
+
+To check the current mode and see which extensions are allowed, run 
+```bash
+azcmagent config list
+```
+
+**Monitor mode has two important limitations: you can't modify the extension allow or block list while in monitor mode, and the Guest Configuration policy agent is disabled**
+
+To return to full mode: 
+```bash
+azcmagent config set config.mode full
+```
+
+### Azure Policy to Arc-enabled servers
+
+Arc-enabled servers appear in Azure as first-class resources under the Microsoft.HybridCompute/machines resource type.
+
+<img width="909" height="272" alt="image" src="https://github.com/user-attachments/assets/de76937c-36fd-449c-b22e-2c009bb5ca27" />
 
 
+### built-in policies for Arc servers 
+These policies cover security agent deployment, configuration baseline enforcement, and security feature enablement.
+
+Configure Azure Defender for Servers to be enabled (with 'P1' subplan) for all resources policy automatically enables Microsoft Defender for Servers Plan 1 on all Arc-enrolled machines. This DeployIfNotExists policy creates the necessary Defender configuration when it detects an Arc server without coverage, ensuring all hybrid servers receive threat detection and vulnerability assessment capabilities.
+
+
+The Configure ChangeTracking Extension for Windows Arc machines and Configure ChangeTracking Extension for Linux Arc machines policies deploy the ChangeTracking extension to enable File Integrity Monitoring (FIM). FIM alerts you when critical system files, registry keys, or configuration files are modified, providing early warning of unauthorized changes or malware activity.
+
+The Windows machines should meet requirements of the Azure compute security baseline and Linux machines should meet requirements for the Azure compute security baseline policies assess operating system configurations against CIS benchmarks and Microsoft security baselines. These policies require the Machine Configuration extension (covered in detail in Module 7) and report compliance status for hundreds of individual settings, such as password complexity requirements, audit logging configuration, and service hardening.
+
+Preview policies such as vTPM should be enabled on supported virtual machines and Secure Boot should be enabled on supported Windows virtual machines enforce security features on virtualized Arc servers, protecting against boot-level malware and ensuring trusted boot chains.
+
+
+<img width="901" height="302" alt="image" src="https://github.com/user-attachments/assets/c26a515f-e523-4e49-aa5d-dc112f75c8fc" />
+
+Some built-in policies apply exclusively to Azure virtual machines, some target only Arc-enabled servers, and some cover both resource types. Review the policy definition's description and the if condition clause to determine applicability. Policies that reference "type": "Microsoft.Compute/virtualMachines" affect only Azure VMs, while those referencing "type": "Microsoft.HybridCompute/machines" target Arc servers. Policies with both conditions in an anyOf block cover hybrid and cloud resources 
 
 
 
