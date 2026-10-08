@@ -572,10 +572,20 @@ An organization wants to ensure all new Azure VMs have JIT access configured aut
 >Assign the Azure Policy definition 'Management ports of virtual machines should be protected with just-in-time network access control
 
 
+---
 
 
+**Examined JIT access requirements: JIT requires Defender for Servers Plan 2, Azure Resource Manager–deployed VMs, and an associated NSG or Azure Firewall. VMs in the Not configured state represent the remediation opportunity.
+Enabled and configured JIT policies: The default policy protects RDP (3389), SSH (22), and WinRM (5985/5986) with three-hour maximum windows and any source IP. Customizing the policy to restrict source IPs to corporate network ranges significantly reduces the exposure window.
+Requested access and audited activity: JIT access requests specify ports, source IP, and time window. Azure Activity Log captures all JIT events, providing a complete audit trail for compliance and security review.
+Enforced JIT adoption with Azure Policy: The built-in audit policy identifies VMs with open management ports and no JIT protection, enabling continuous compliance monitoring as new VMs are deployed.**
 
 
+**JIT replaces standing access with on-demand access: Management ports remain blocked until a user requests access for a specific purpose and duration.
+Default ports include 22, 3389, 5985, 5986: Customize the policy to add application-specific ports or remove unnecessary ports.
+Restrict source IPs for tighter control: Replace "Any" with corporate IP ranges to limit access to trusted networks.
+Azure Activity Log provides the audit trail: All JIT requests, approvals, and policy changes are recorded for compliance reporting.
+Azure Policy drives scale adoption: The audit policy identifies noncompliant VMs, enabling continuous enforcement as the VM estate grows.**
 
 
 
