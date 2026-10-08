@@ -507,6 +507,91 @@ Effective Arc server security requires layered controls operating at multiple en
 >Role-based access control separates enrollment privileges from operational management. Use the Azure Connected Machine Onboarding role for server registration automation and the Azure Connected Machine Resource Administrator role (with PIM) for operational tasks requiring extension deployment.
 
 
+---
+
+
+### Microsoft Defender for Cloud's just-in-time (JIT) VM access 
+
+
+<img width="908" height="283" alt="image" src="https://github.com/user-attachments/assets/7ee471fb-629b-4f3e-9dab-31db2235c303" />
+
+ALLOW rules with on-demand, time-limited, IP-scoped rules that grant access only when needed.
+
+**When an access request is approved, Defender for Cloud inserts a temporary ALLOW rule into the NSG with three critical constraints: the rule permits traffic only from the requester's source IP address (or a specified IP range), only on the requested port, and only for the approved time window (maximum of 24 hours, typically much shorter). After the time window expires, Defender for Cloud automatically removes the temporary ALLOW rule, returning the port to a blocked state.**
+
+ With Azure Firewall, JIT modifies the DNAT (Destination Network Address Translation) table instead of NSG rules, but the access control model remains identical. 
+
+
+### Requirements for just-in-time access
+
+Defender for Servers Plan 2 must be enabled on the subscription—Plan 1 doesn't include JIT capabilities. The virtual machine must be deployed through Azure Resource Manager; Classic deployment model VMs aren't supported and can't be migrated to JIT without redeployment.
+
+VM can be protected by Azure Firewall deployed on the same virtual network—however, that firewall must be configured with Rules (Classic). VMs protected by Azure Firewall using Firewall Policies (managed through Azure Firewall Manager), VMs without an NSG or firewall, aren't supported for JIT access.
+
+
+### Virtual machine eligibility states
+
+Defender for Cloud categorizes virtual machines into three states visible in the just-in-time VM access interface. Configured VMs have JIT enabled and show request history and active policies. Not configured VMs meet all technical requirements but don't have JIT protection enabled 
+
+Unsupported VMs can't use JIT due to Classic deployment, missing NSG or firewall association, or JIT being disabled in the security policy.
+
+**JIT VM access supports Azure virtual machines deployed through Azure Resource Manager across all Azure regions where Defender for Cloud is available. JIT also supports AWS EC2 instances connected through Defender for Cloud's multicloud capabilities, though this integration is currently in preview.**
+
+
+The default policy configuration includes commonly targeted management ports with conservative access parameters:
+
+RDP (3389): Maximum request time 3 hours, allowed source IPs: Any, protocol: TCP
+SSH (22): Maximum request time 3 hours, allowed source IPs: Any, protocol: TCP
+WinRM (5985): Maximum request time 3 hours, allowed source IPs: Any, protocol: TCP
+WinRM over HTTPS (5986): Maximum request time 3 hours, allowed source IPs: Any, protocol: TCP
+
+Linux VMs receive JIT protection on port 22, while Windows VMs are protected on ports 3389, 5985, and 5986.
+
+
+**The combined length of the JIT policy name and virtual machine name can't exceed 56 characters. If you encounter provisioning errors during JIT enablement, verify that resource names fall within this constraint and shorten names if necessary.**
+
+### Audit JIT activity 
+
+The Activity Log displays entries for each JIT event:
+
+Initiate JIT Network Access: User submitted a JIT access request
+Update JIT Network Access Policy: Policy configuration was modified
+Delete JIT Network Access Policy: JIT was disabled on the VM
+
+
+Q&A
+
+ A security engineer enables JIT VM access on an Azure virtual machine. What happens to the NSG rule for RDP port 3389 immediately after JIT is enabled on that VM?
+>The port is locked down—inbound access on port 3389 is blocked until an approved JIT request opens it
+
+ A user submits a JIT access request from the Azure portal for a JIT-enabled VM. What information must the user provide in the access request?
+>The ports to open, the source IP range, and the duration of access
+
+
+An organization wants to ensure all new Azure VMs have JIT access configured automatically without manual intervention after deployment. Which approach works at scale?
+>Assign the Azure Policy definition 'Management ports of virtual machines should be protected with just-in-time network access control
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
