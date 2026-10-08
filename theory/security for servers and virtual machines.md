@@ -588,14 +588,73 @@ Azure Activity Log provides the audit trail: All JIT requests, approvals, and po
 Azure Policy drives scale adoption: The audit policy identifies noncompliant VMs, enabling continuous enforcement as the VM estate grows.**
 
 
+### Azure Machine Configuration extension capabilities and modes
+
+<img width="901" height="365" alt="image" src="https://github.com/user-attachments/assets/8dca0552-8d1d-42a2-bc26-ad2fa4784f2b" />
+
+The Azure Machine Configuration extension runs as a guest agent inside each virtual machine. The extension evaluates OS settings against a configuration definition—either a built-in Microsoft baseline or a custom configuration you author. Configuration definitions specify required states for registry keys, running services, file permissions, security policies, and application settings.
+
+When the extension completes an evaluation cycle, it reports results to Azure Policy using the VM's system-assigned managed identity. These results populate the same compliance dashboard you use for resource-level policies, providing unified visibility across both infrastructure and OS configuration.
+
+**The system-assigned managed identity serves two purposes: it authenticates the extension to Azure when reporting compliance data, and it enables the extension to access Azure resources during remediation tasks.** Both the extension and the managed identity are prerequisites—without them, compliance evaluation can't occur.
+
+
+Machine Configuration operates in two distinct modes
+
+Audit mode uses the AuditIfNotExists policy effect. The extension evaluates settings and reports noncompliance, but never modifies the system. If a registry value is set incorrectly or a service that should be stopped is running, the policy marks the resource as noncompliant. No changes occur. This mode carries no risk of disrupting running workloads.
+
+Enforce mode uses the DeployIfNotExists policy effect. The extension evaluates settings and automatically remediates noncompliance. If a required registry value is missing, the extension creates it. If a prohibited service is running, the extension stops it. While this provides automated hardening, it can disrupt applications that depend on the current configuration state.
+
+### security baseline policies
+
+ Microsoft Cloud Security Benchmark (MCSB) control PV-4:
+
+ <img width="904" height="413" alt="image" src="https://github.com/user-attachments/assets/996a0f03-f4d4-42a3-a5e1-0b902e88a19a" />
+
+
+### Windows security baseline
+
+This baseline covers account policies (password length, complexity, history), and audit policies (sign-in events, privilege use, system events). It also covers security options (network access controls, user account control behavior), user rights assignments (who can sign-in locally, shut down the system, take ownership of files), and Windows Defender configuration.
+
+Assign this initiative at the same management group scope where you deployed prerequisites. The initiative uses AuditIfNotExists by default—it reports noncompliance without modifying any settings. This audit-first approach gives Contoso's team visibility into current configuration state without risk of disrupting factory systems.
+
+After assignment, Azure Policy begins evaluating Windows VMs within the scope. Initial compliance data appears within 30 minutes for new VMs, but a complete compliance scan of existing infrastructure can take up to 24 hours. The evaluation runs on a recurring schedule—every 24 hours for audit policies, and when configuration drift is detected for enforce policies.
+
+### linux security baseline
+
+This baseline evaluates:
+
+SSH daemon configuration (PermitRootLogin disabled, protocol version, strong ciphers)
+Filesystem permissions and ownership on sensitive directories
+Kernel parameters affecting network security (IP forwarding, SYN cookies, ICMP redirect handling)
+Systemd service states (unnecessary services disabled)
+Package security configurations
 
 
 
+### custom machine configurations
+
+<img width="908" height="480" alt="image" src="https://github.com/user-attachments/assets/bf57380c-14ab-4c5e-810f-5fcbd1edf519" />
 
 
+**For Windows-focused configurations, PowerShell Desired State Configuration (DSC) provides the authoring syntax. DSC uses declarative configuration blocks that describe the desired state—a registry key must have a specific value. There must be a service must be running, and a file must exist with specific permissions. DSC resources handle the implementation details. Windows administrators familiar with DSC can apply that knowledge directly to Machine Configuration authoring.**
 
+Q&A
 
+A security engineer assigns the 'Windows machines should meet requirements of the Azure compute security baseline' policy. The policy shows noncompliant resources for some VMs even though the VMs are healthy. What two prerequisites must be present on the VM for the policy to evaluate compliance?
+>Azure Machine Configuration extension and system-assigned managed identity
 
+After admins author and locally test a custom Azure Machine Configuration package, what is the correct sequence of steps to deploy it using Azure Policy?
+>Upload to Azure Storage → create a custom policy definition referencing the package → assign the policy
+
+Key decisions 
+Always start policy assignments in audit mode before promoting to enforce mode. This review period identifies configuration conflicts that could disrupt running applications and allows you to document legitimate exceptions. Promoting directly to enforce mode risks unintended service outages when automated remediation changes settings required by factory software.
+
+Both the Azure Machine Configuration extension and a system-assigned managed identity are mandatory prerequisites for compliance evaluation. Without these components, the policy can't assess OS settings. Deploy prerequisites using the built-in initiative before assigning baseline policies, and create remediation tasks to cover existing VMs.
+
+Built-in security baselines provide immediate coverage of Microsoft Cloud Security Benchmark controls. These baselines address industry-standard hardening requirements across password policies, audit configuration, service states, and security options. Custom configurations extend this foundation to organization-specific needs—proprietary software requirements, legacy system compatibility settings, or internal security standards not covered by Microsoft baselines.
+
+The same policy mechanism covers both Azure VMs and Azure Arc-enabled servers. A single assignment at management group scope applies platform-appropriate configurations to Windows Server VMs in Azure and Arc-enrolled Linux servers on the factory floor.
 
 
 
