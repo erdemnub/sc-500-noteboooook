@@ -256,8 +256,195 @@ Company wants to ensure that no team in any subscription can create an NSG rule 
 
 **While NSGs and ASGs control lateral movement within your network, Azure DDoS Protection provides defense against volumetric attacks from the internet. Consider enabling DDoS Protection to complement your network segmentation strategy.**
 
+## Centralize and enforce traffic inspection using Azure Firewall
+
+<img width="690" height="302" alt="image" src="https://github.com/user-attachments/assets/0857e869-8cf4-44a6-964d-8369c328b83a" />
+
+### What NSGs can and can't do
+
+NSGs evaluate traffic based on source IP, destination IP, protocol, and port number. They operate at Layer 3 and Layer 4 of the network stack and apply rules in a stateless manner to each packet.
+
+NSGs excel at basic network segmentation. You can block or allow specific ports and IP ranges, use service tags to represent Azure services without memorizing IP addresses, and group virtual machines with application security groups (ASGs) for dynamic rule management. An NSG rule can permit HTTPS traffic from your web tier to your database tier while blocking all other protocols.
+
+An NSG can't distinguish between legitimate HTTPS traffic to api.github.com and malicious traffic to a command-and-control server on port 443. Because NSGs only see IP addresses, they can't block traffic to evil.example.com unless you manually add every IP that domain might resolve to. 
 
 
+
+Five threat classes drive the need for Azure Firewall in enterprise environments.
+
+<img width="682" height="597" alt="image" src="https://github.com/user-attachments/assets/4ae6ea94-5a32-4979-80c6-456f9a2f533d" />
+
+**An NSG rule permitting outbound HTTPS doesn't distinguish between approved Azure OpenAI endpoints and an attacker-controlled API endpoint on the same port. With Azure Firewall application rules, you create an FQDN allow-list that permits contoso-openai.openai.azure.com while blocking all other destinations on port 443.**
+
+Tip:
+*Enable threat intelligence-based filtering in Alert and deny mode for production environments. Alert mode logs suspicious traffic without blocking it, which is useful during initial deployment but leaves your environment exposed.*
+
+
+### Azure Firewall capabilities
+
+Azure Firewall provides four types of rules, each addressing different threat scenarios.
+
+Network rules filter traffic based on IP address, port, and protocol, similar to NSGs but with two advantages: they're stateful (tracking connection state reduces rule complexity), and they're managed centrally through Azure Firewall Policy. A network rule permitting outbound DNS on port 53 automatically allows return traffic without a separate inbound rule.
+
+Application rules filter outbound HTTP and HTTPS traffic by fully qualified domain name (FQDN). These rules require the DNS proxy feature, which allows Azure Firewall to intercept DNS queries and resolve FQDNs before applying rules. An application rule can permit traffic to github.com and *.nuget.org while blocking all other outbound HTTPS, even though all destinations share port 443.
+
+DNAT rules (destination network address translation) translate inbound traffic from a public IP to an internal resource. Unlike network and application rules that focus on outbound and east-west traffic, DNAT rules handle internet-to-resource scenarios. A DNAT rule can map your firewall's public IP on port 443 to an internal web server at 10.1.2.5:443.
+
+Threat intelligence-based filtering blocks traffic to or from IP addresses and FQDNs associated with known malicious activity. This capability draws from Microsoft's Intelligent Security Graph, which aggregates threat signals from across Microsoft's global infrastructure. Threat intelligence operates in three modes: Off (disabled), Alert (log only), or Alert and deny (block and log). Unlike custom network or application rules that require manual updates, threat intelligence filtering updates automatically as Microsoft identifies new threats.
+
+Azure Firewall also complements Azure Web Application Firewall (WAF), which protects inbound HTTP/S traffic against layer 7 threats like SQL injection and cross-site scripting. WAF sits at the ingress point on Application Gateway or Azure Front Door, while Azure Firewall controls outbound and east-west traffic. These controls work together: WAF defends public-facing applications, and Azure Firewall prevents compromised workloads from exfiltrating data or communicating with C2 infrastructure.
+
+
+### Choose the right Azure Firewall SKU
+Azure Firewall offers three SKUs: Basic, Standard, and Premium. All three provide stateful network filtering, but they differ significantly in threat intelligence enforcement capability and advanced inspection features.
+
+<img width="686" height="416" alt="image" src="https://github.com/user-attachments/assets/f70004f0-b75e-48e3-924c-6c527dcc8393" />
+
+
+**Transport Layer Security (TLS) inspection decrypts outbound HTTPS traffic, inspects the content, and re-encrypts it before forwarding. This capability addresses threats hidden in encrypted traffic, such as malware downloads over HTTPS or data exfiltration to legitimate cloud services. Regulated industries often require TLS inspection to meet compliance mandates, but it introduces certificate management complexity and potential privacy concerns**
+
+Basic supports threat intelligence in alert-only mode—it logs suspicious traffic but can't block it. Standard and Premium can enforce threat intelligence in Alert and deny mode, actively blocking connections to known malicious IPs and domains. For production environments where blocking is required, Basic isn't a suitable choice.
+
+
+IDPS analyzes network traffic patterns to detect and block exploits, malware propagation, and protocol violations. Unlike threat intelligence filtering, which relies on known-bad indicators, IDPS uses signature-based and anomaly based detection to identify suspicious behavior. IDPS operates in three modes: Off, Alert, or Alert and deny.
+
+URL filtering extends application rules by inspecting the full URL path, not just the FQDN. Standard tier application rules permit or deny example.com entirely, but Premium URL filtering can allow example.com/api/* while blocking example.com/admin/*.
+
+For most enterprise environments, Standard tier addresses the core threat classes outlined earlier. Premium tier becomes necessary when regulatory requirements mandate TLS inspection, when advanced threat detection justifies the extra cost, or when granular URL-level control is required.
+
+
+### Configure Azure Firewall rules and policies
+
+<img width="709" height="456" alt="image" src="https://github.com/user-attachments/assets/ac349ab5-a806-478f-92e1-a7f3da9fd9fe" />
+
+
+Azure Firewall operates as a centralized enforcement point in a hub-spoke network topology. The firewall sits in a dedicated subnet within the hub virtual network (virtual network) and inspects traffic flowing between spokes, from spokes to the internet, and from the internet to spoke workloads.
+
+The deployment requires a subnet named AzureFirewallSubnet in the hub virtual network. This subnet must be at least /26 in size, though Microsoft recommends /24 to accommodate future scaling. The firewall receives a private IP address from this subnet, which becomes the next-hop target for user-defined routes (UDRs) applied to spoke subnets.
+
+With this hub-spoke pattern, you configure UDRs on each spoke subnet to route all internet-bound traffic (0.0.0.0/0) to the firewall's private IP address. Traffic from spoke workloads flows to the hub firewall, where Firewall Policy rules inspect and either allow or deny the connection. East-west traffic between spokes can also route through the hub firewall if you configure spoke-to-spoke UDRs for that purpose.
+
+This architecture provides a single choke point for policy enforcement. Without the firewall, spoke virtual networks (VNets) would route directly to the internet through Azure's default system routes, bypassing centralized inspection and logging.
+
+### Firewall Policy hierarchy
+
+Azure Firewall supports two configuration methods: classic rules and Firewall Policy. Classic rules are stored directly on the firewall resource and can't be shared across multiple firewalls. Firewall Policy is a standalone Azure resource that supports rule reuse, policy inheritance, and integration with Azure Firewall Manager for centralized governance.
+
+important : 
+
+**Always use Firewall Policy for new deployments. Classic rules are a legacy option and don't support advanced features like rule collection groups, parent-child policy inheritance, or global policy management.**
+
+
+
+Firewall Policy organizes rules into a four-level hierarchy:
+
+Policy: The top-level resource (for example, policy-contoso-security)
+Rule collection group: A container with a priority value (100, 200, 300, and so on). Lower numbers are evaluated first.
+Rule collection: A set of rules with a shared action (Allow or Deny) and priority within the group
+Rules: Individual traffic-matching criteria (source IP, destination FQDN, port, protocol)
+
+
+
+---
+
+
+Firewall Policy supports three rule collection types, and Azure Firewall evaluates all traffic in a fixed priority order:
+
+Threat intelligence rules: highest priority, evaluated before all custom rules. When enabled in Alert and deny mode, threat intelligence can block traffic before any DNAT, network, or application rule is evaluated.
+Destination network address translation (DNAT) rule collection: Translates inbound public IP addresses to private IP addresses for workloads behind the firewall
+Network rule collection: Filters traffic by IP address, protocol, and port (stateful inspection)
+Application rule collection: Filters outbound traffic by fully qualified domain name (FQDN) using HTTP/HTTPS inspection
+
+
+
+The first step is to enable the DNS proxy on the Firewall Policy. Application rules rely on FQDN filtering, which requires the firewall and clients to resolve domain names to the same IP address. When DNS proxy is enabled, the fire
+
+---
+
+To configure Firewall Policy and rule collections in the Azure portal:
+
+Deploy Azure Firewall by selecting the hub virtual network, creating the AzureFirewallSubnet (minimum /26), choosing Firewall Policy (create new: policy-contoso-security), and selecting the appropriate SKU (Standard for most scenarios, Premium for Transport Layer Security (TLS) inspection and intrusion detection).
+
+Open the Firewall Policy resource (policy-contoso-security) and navigate to DNS Settings. Enable DNS Proxy and configure custom DNS servers if your environment uses private DNS zones.
+
+Create an application rule collection to allow approved outbound HTTPS traffic:
+
+Collection name: allow-approved-outbound
+Priority: 200
+Action: Allow
+Rule 1 (Microsoft 365 access): Source = spoke virtual network CIDR ranges, destination FQDNs = use the WindowsVirtualDesktop FQDN tag or list specific Microsoft 365 endpoints, protocol = HTTPS:443
+Rule 2 (Azure OpenAI access for AI agents): Source = AI agent subnet CIDR, destination FQDN = *.openai.azure.com, protocol = HTTPS:443
+Create a network rule collection to block inbound management ports:
+
+Collection name: deny-mgmt-ports-inbound
+Priority: 100
+Action: Deny
+Rule: Source = Any, destination = spoke virtual network ranges, protocol = TCP, destination ports = 3389, 22
+
+
+
+
+Azure AI agents running in spoke VNets make outbound HTTPS calls to model endpoints. Network security groups (NSGs) see these requests as ordinary port 443 traffic and can't distinguish between approved and unapproved AI services. Firewall application rules solve this problem by filtering on FQDN. Configure an application rule that allows only *.openai.azure.com from the AI agent subnet. The firewall's default-deny stance blocks any AI endpoint not explicitly listed, preventing agents from calling unauthorized external APIs or exfiltrating data through model interactions.
+
+
+**Network rules block high-risk inbound management ports even if Azure Virtual Network Manager (AVNM) policies fail. Application rules allow only approved FQDNs for outbound HTTPS, and the stance to deny by default blocks everything else.**
+
+
+### enable threat intelligence filtering 
+
+Threat intelligence supports three modes:
+
+Off: Disables threat intelligence filtering entirely. Use this mode only when you need a baseline traffic view during initial deployment.
+Alert only: Logs suspicious connections but doesn't block them. Use this mode when testing to understand potential false positives before enforcing.
+Alert and deny: Blocks and logs suspicious connections. Use this mode in production environments.
+
+
+### Secure a Virtual WAN hub with Azure Firewall
+
+<img width="678" height="309" alt="image" src="https://github.com/user-attachments/assets/1b10ed88-bf80-4b07-9ed3-c2abb0db82e9" />
+
+Azure Virtual WAN provides managed hub connectivity for branches (site-to-site VPN), remote users (point-to-site VPN), and spoke VNets. By default, the Virtual WAN hub routes traffic directly between connected branches and spokes—no inspection in the middle.
+
+The security requirement is clear: all inter-spoke, branch-to-spoke, and internet-bound traffic must pass through an inspection point. Azure Firewall deployed into the Virtual WAN hub solves this problem.
+
+
+### Secured Virtual Hub architecture and routing intent
+A Secured Virtual Hub is a Virtual WAN hub with Azure Firewall deployed into it. Deploying Azure Firewall into a Virtual WAN hub converts it to a Secured Virtual Hub. The firewall integrates with Virtual WAN routing to become the next hop for all traffic types when routing intent is enabled.
+
+Azure Firewall Manager is the management plane for Secured Virtual Hubs. It applies Firewall Policy to the hub-deployed firewall and configures routing intent. Unlike the hub-spoke virtual network pattern, you don't create an AzureFirewallSubnet manually—the platform manages the subnet automatically when you deploy Azure Firewall into the hub.
+
+### How routing intent works
+
+Private traffic: branch-to-spoke, spoke-to-spoke, and branch-to-branch traffic
+Internet traffic: all internet-bound traffic from branches and spokes
+
+**When routing intent is enabled for private traffic, Virtual WAN automatically programs the route tables in all connected branches and spoke VNets to route via the hub firewall. You don't create or update user-defined routes (UDRs) manually—the platform handles route propagation for you.**
+
+**When routing intent is enabled for internet traffic, all internet-bound flows route through the firewall before egress. You can enable routing intent for one or both traffic types, depending on your security requirements.**
+
+
+
+**Enabling routing intent on a production hub reroutes all traffic through the firewall immediately. Test with a nonproduction hub first and verify all required traffic is permitted in the Firewall Policy before enabling routing intent in production environments.**
+
+### Hub-spoke virtual network vs. Secured Virtual Hub
+
+<img width="685" height="368" alt="image" src="https://github.com/user-attachments/assets/ee9b1264-8dfb-4838-9973-d88581397cd8" />
+
+
+
+Q&A
+
+Company's security team needs to prevent Azure-hosted VMs from accessing malware command-and-control domains, even if those domains use dynamically generated hostnames. Which Azure Firewall capability addresses the requirement?
+>Threat-intelligence-based filtering set to Deny mode, which blocks traffic to and from known malicious IPs and domains maintained by Microsoft.
+
+A Company Azure AI agent running in a spoke virtual network makes outbound HTTPS calls to Azure OpenAI endpoints. The security team wants to ensure the agent can only reach authorized Azure OpenAI endpoints and is blocked from reaching any other external AI APIs. Which Azure Firewall rule type enforces blocking external AI APIs?
+>An application rule collection with FQDN rules that allow the specific Azure OpenAI endpoint hostnames and deny all other external AI service FQDNs.
+
+
+Company deploys Azure Virtual WAN with hub-spoke topology across three regions. The CISO requires all inter-spoke and internet-bound traffic to pass through a central inspection point. What configuration achieves the outcome?
+>Convert each Virtual WAN hub to a Secured Virtual Hub by deploying Azure Firewall into the hub, then enable routing intent for private and internet traffic.
+
+**Azure Firewall controls outbound and east-west traffic. For protecting inbound HTTP/S web application traffic from OWASP threats, use Azure Web Application Firewall on Application Gateway or Azure Front Door.**
 
 
 
