@@ -45,6 +45,29 @@ The critical-risk path is the web-to-database connection. An attacker who compro
 
 ### Control traffic with network security groups
 
+Each NSG rule specifies a source, destination, protocol, port range, and action (Allow or Deny).
+
+**Every NSG includes default rules that you can't remove. These defaults allow traffic within the virtual network (AllowVNetInBound at priority 65000), allow traffic from Azure's load balancer (AllowAzureLoadBalancerInBound at priority 65001), and deny all other inbound traffic (DenyAllInBound at priority 65500)**
+
+
+A deny rule at priority 100 blocks traffic before Azure evaluates the allow-rule at priority 200. This means you should reserve the 100-200 priority range for critical deny rules that enforce hard security boundaries.
+
+
+
+### rule properties to enforce least privilege
+
+Each NSG rule requires six properties that together determine what traffic to allow or deny.
+
+Source and destination accept an IP address, CIDR (Classless Inter-Domain Routing) range, service tag, or application security group. Service tags like AzureLoadBalancer, Internet, and virtual network let you scope rules without managing IP address lists. For example, using the AzureLoadBalancer tag as the source allows traffic from Azure's infrastructure load balancer (168.63.129.16) without hard-coding that IP address.
+
+Protocol specifies TCP, UDP, or Any. Be specific—choosing "Any" creates unnecessary risk. If your application uses TCP port 1433 for SQL Server connections, the rule should specify TCP, not Any.
+
+Port accepts a specific port number (such as 1433, 22, 443, or 3389) or a range. Avoid broad ranges like 0-65535 in allow rules because they undermine the principle of least privilege. With augmented security rules, you can specify multiple ports, source addresses, or destination addresses in a single rule using comma-separated values, which reduce your total rule count.
+
+Action is either Allow or Deny. Use Deny rules to create hard security boundaries and Allow rules to open specific, documented pathways.
+
+Priority ranges from 100 to 4096, with lower numbers evaluated first. Leave gaps between priority numbers so future administrators can insert rules without renumbering your entire ruleset.
+
 
 
 
