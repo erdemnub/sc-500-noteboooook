@@ -69,8 +69,57 @@ Action is either Allow or Deny. Use Deny rules to create hard security boundarie
 Priority ranges from 100 to 4096, with lower numbers evaluated first. Leave gaps between priority numbers so future administrators can insert rules without renumbering your entire ruleset.
 
 
+### common NSG misconfigurations
+
+Allow Any → Any rules nullify the security benefit of NSGs entirely. If you have a documented business reason for allowing all traffic, the environment probably doesn't need NSG-level segmentation at all.
+
+**if your critical deny rule is at priority 200 and your allow rule is at priority 300, someone can insert an allow rule at priority 150 that bypasses your deny rule. Reserve the 100-199 range for deny rules and start allow rules at 200 or higher.**
 
 
+for example : 
+
+100-199   Critical Deny
+
+200-499   Allow Business Traffic
+
+500-999   Admin / Management
+
+1000+     Special Rules
+
+
+NSG flow logs feed into tools like Microsoft Defender for Cloud and Microsoft Sentinel to detect anomalies.
+
+The least-privilege principle applies to NSG rules: if you don't have a documented business reason for a rule, it shouldn't exist. Review your ruleset quarterly and remove rules that no longer serve active workloads.
+
+IP-based CIDR rules work in stable environments, but as workloads scale and IPs change, maintaining accurate source and destination CIDRs becomes error-prone.
+
+
+Stale rules create security risks. A rule that was accurate last quarter can permit traffic from VMs that teams repurposed—or can block VMs that now need access. Manual tracking doesn't scale, and IP-based documentation becomes outdated in the moment documented.
+
+
+ASG (application security groups)
+
+**The NSG rule references the ASG as a source or destination. When a NIC joins the ASG, traffic from that NIC automatically inherits the rules that reference that ASG. When you remove a NIC from the ASG, the rules no longer apply to that NIC's traffic—no rule edits required.**
+
+**ASGs don't replace NSGs. They make NSG rule sources and destinations easier to maintain. The NSG still enforces the rules; ASGs provide a dynamic, membership-based way to identify traffic sources and destinations.**
+
+
+
+tip 
+
+>Associate all NICs to the appropriate ASG before updating NSG rules to reference those ASGs. An NSG rule that references an ASG only applies to NICs that are members of that ASG—if you update the rule first, traffic can be blocked until NIC associations are complete.
+
+
+Before (CIDR-Based)
+
+<img width="690" height="207" alt="image" src="https://github.com/user-attachments/assets/d5976730-bf1b-4cc3-86a1-d19601e07db0" />
+
+
+After (ASG-based)
+
+<img width="704" height="198" alt="image" src="https://github.com/user-attachments/assets/238772de-d00a-4c15-af9e-4be6352120c3" />
+
+**ASGs also support complex scenarios. A single NIC can be a member of multiple ASGs, allowing you to grant different types of access based on overlapping group memberships. ASGs can serve as both source and destination in the same rule, as long as both ASGs are in the same virtual network.**
 
 
 
