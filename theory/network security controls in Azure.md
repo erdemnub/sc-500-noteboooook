@@ -184,6 +184,75 @@ Standard port enforcement: If your organization has a policy that all internal s
 
 ### Verify effective network security rules with Network Watcher
 
+**How do we know these controls are actually working together as intended?**
+
+Azure evaluates network traffic against multiple layers of security controls in a specific sequence: AVNM security admin rules first, then subnet NSG rules, then NIC NSG rules. A single virtual machine (VM) might have three or more rule sources affecting its traffic, and the effective security rules are the aggregated result of all these layers.
+
+
+### Network Watcher to view effective security rules
+
+<img width="702" height="318" alt="image" src="https://github.com/user-attachments/assets/2c1e1807-b8af-402c-a099-5b1a01943691" />
+
+
+
+Network Watcher's effective security rules tool shows all NSG rules affecting a specific NIC, aggregated, and sorted by evaluation order. 
+
+You access this tool through the Azure portal in two ways: navigate to Network Watcher → NSG diagnostic, or go directly to a VM's NIC screen and select Effective security rules. 
+
+The output shows : 
+Source: which configuration the rule comes from (AVNM security admin configuration, subnet NSG, or NIC NSG)
+Priority: the rule's priority within its rule set (lower numbers evaluate first)
+Action: Allow or Deny
+Port range and protocol: what traffic the rule matches
+Inheritance indicator: whether the rule was inherited from a subnet NSG, applied at the NIC level, or enforced via AVNM
+
+The result displays Allow or Deny along with the specific rule name that made the decision. This pinpoints exactly which rule in your multi-layer configuration is controlling each traffic path.
+
+
+Important:
+**IP flow-verify evaluates NSG rules and security admin configurations based on their configuration and doesn't require the Network Watcher agent VM extension to be installed on the VM. The extension is required for features such as packet capture and Connection Monitor, not for IP flow verify.**
+
+
+### Handle unexpected verification results
+
+When IP flow-verify returns unexpected results, the effective security rules view helps you diagnose the problem. If a path is denied that should be allowed, check for priority conflicts. A broad deny rule with a lower priority number (which evaluates earlier) might catch the traffic before your allow-rule processes it.
+
+Verify that application security groups (ASGs) are correctly associated with NICs. Rules that reference an ASG only apply to NICs that are members of that ASG. A NIC that isn't assigned to the referenced ASG is excluded from those rules, even if the rule configuration appears correct.
+
+If a path is allowed that should be denied, look for missing deny rules. Azure's default rules include AllowVNetInBound, which permits traffic between resources in the same virtual network unless you explicitly deny it. Check the AVNM deployment status—if you created a security admin configuration but haven't deployed it to the target network group, those admin rules don't take effect.
+
+When you identify the rule causing unexpected behavior in the effective security rules list, you have several remediation options. Adjust rule priorities to ensure evaluation order matches your intent. Add explicit deny rules to block traffic that default allow rules currently permit. Verify ASG assignments on NICs. Deploy pending AVNM configurations to activate admin rules.
+
+### Complete the verification workflow 
+
+The results confirm all three layers of their security controls appear correctly:
+
+AVNM admin rule: deny-rdp-from-internet (priority 100, source: Internet, port: 3389, action: Deny) ✓
+Subnet NSG rule: deny-web-to-db-1433 (priority 100, source: asg-web-tier, destination port: 1433, action: Deny) ✓
+Subnet NSG rule: allow-app-to-db-1433 (priority 200, source: asg-app-tier, destination port: 1433, action: Allow) ✓
+
+
+then runs IP flow verify for each critical path identified in their security assessment:
+
+Web VM → Database VM, port 1433: Deny—blocked by rule deny-web-to-db-1433 ✓
+App VM → Database VM, port 1433: Allow—permitted by rule allow-app-to-db-1433 ✓
+Internet → Any VM, port 3389: Deny—blocked by AVNM admin rule deny-rdp-from-internet ✓
+
+
+Q&A
+
+Company's security team discovers that a compromised web-tier VM can initiate connections directly to the database tier on port 1433. No NSG is attached to the database subnet. What is the most effective first step to close this lateral movement path?
+-Create and attach an NSG to the database subnet with a deny-all inbound rule, then add an allow rule for port 1433 scoped to the web tier only.
+
+A team uses IP-based NSG rules to control access between 40 application-tier VMs and 20 database-tier VMs. When new VMs are added, rules frequently break because IP addresses change. What change resolves this maintenance problem while preserving the security boundary?
+-Use application security groups to group application-tier and database-tier VMs, then write NSG rules referencing the ASGs instead of individual IPs.
+
+
+Company wants to ensure that no team in any subscription can create an NSG rule that allows RDP (port 3389) inbound from the internet. They want to block this even if they have Owner permissions on their subscription. Which Azure Virtual Network Manager capability enforces this?
+-A security admin rule with action Always Deny on destination port 3389 from source Any applied to a network group covering all subscriptions.
+
+**While NSGs and ASGs control lateral movement within your network, Azure DDoS Protection provides defense against volumetric attacks from the internet. Consider enabling DDoS Protection to complement your network segmentation strategy.**
+
 
 
 
