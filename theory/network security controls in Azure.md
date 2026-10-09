@@ -130,5 +130,67 @@ ASGs simplify rule management, but they have scope limits. ASGs are scoped to a 
 
 
 
+### policy with Azure Virtual Network Manager
+
+Azure Policy can restrict NSG rule creation by denying rules that match certain patterns, but it operates on resource creation events, not on the effective network posture in real time.
+
+Azure Virtual Network Manager (AVNM) addresses this gap directly. AVNM lets you define network policy at the organization or management group level and push it to virtual networks across subscriptions. Unlike NSGs, which any resource owner can modify, AVNM configurations require centralized administrative permissions and override local network rules.
+
+### How Azure Virtual Network Manager works
+
+AVNM scope defines which management groups or subscriptions the AVNM instance manages. An AVNM instance deployed at the management group level can govern all child subscriptions, giving you organization-wide control without deploying separate instances per subscription.
+
+Network groups are logical collections of virtual networks managed by AVNM. You add virtual networks (VNets) to a network group either manually or using Azure Policy conditional expressions. Think of network groups as application security groups for virtual networks—they let you target policies at sets of networks rather than configuring each virtual network individually.
+
+Configurations define what you apply to a network group. AVNM supports two configuration types: connectivity configurations create hub-spoke or mesh topologies, while security admin configurations enforce traffic rules. For security engineering, security admin configurations are the critical tool.
+
+Security admin rules are rules in a security admin configuration that apply before any NSG rules are evaluated. They can Allow, Always Allow, or Deny traffic, regardless of what NSG rules exist on the affected resources. This evaluation order is what gives AVNM its enforcement power.
+
+### Security admin rules vs. NSG rules
+
+<img width="687" height="428" alt="image" src="https://github.com/user-attachments/assets/cc3ecc9b-253c-482a-941e-ea6230dcab10" />
+
+The security consequence of this design is powerful: a security admin rule with the Deny action on port 3389 from the Internet service tag blocks all inbound RDP from the internet on every virtual network in the network group, even if a team has an NSG Allow rule on port 3389. The admin rule wins.
+
+
+Create a network group and security admin rule
+1. Create an AVNM instance:
+2. Create a network group:
+3. Create a security admin configuration:
+4. Add a rule collection
+5. Add a security admin rule
+Name: deny-rdp-from-internet
+Priority: 100 (lower numbers are evaluated first)
+Protocol: TCP
+Source: Service tag Internet
+Source port: Any (*)
+Destination: Any
+Destination port: 3389
+Action: Deny
+
+6.Deploy the configuration:
+
+**Deploying a security admin rule is a network-wide change that takes effect immediately on all VNets in the network group. Test configurations in a nonproduction network group before deploying to production VNets. Changes to security admin configurations don't take effect until you explicitly deploy them.** 
+
+
+### When to use AVNM security admin rules
+
+Block dangerous ports organization-wide: Use Deny rules to block RDP from the internet (port 3389), SSH from the internet (port 22), and unencrypted management protocols.
+
+**Always Allow for required management traffic: If your organization uses Azure Bastion for management access, create an Always Allow rule for Bastion subnet traffic so teams can't accidentally block management connectivity with their own NSGs. This pattern also works for centralized monitoring agents, backup services, and other infrastructure services that must reach all workloads.**
+
+Standard port enforcement: If your organization has a policy that all internal services communicate on specific approved ports only, security admin rules enforce that requirement at the platform level. Teams can still create NSG rules for application-specific traffic, but the baseline port policy remains immutable.
+
+
+### Verify effective network security rules with Network Watcher
+
+
+
+
+
+
+
+
+
 
 
