@@ -242,13 +242,16 @@ Internet → Any VM, port 3389: Deny—blocked by AVNM admin rule deny-rdp-from-
 Q&A
 
 Company's security team discovers that a compromised web-tier VM can initiate connections directly to the database tier on port 1433. No NSG is attached to the database subnet. What is the most effective first step to close this lateral movement path?
+
 -Create and attach an NSG to the database subnet with a deny-all inbound rule, then add an allow rule for port 1433 scoped to the web tier only.
 
 A team uses IP-based NSG rules to control access between 40 application-tier VMs and 20 database-tier VMs. When new VMs are added, rules frequently break because IP addresses change. What change resolves this maintenance problem while preserving the security boundary?
+
 -Use application security groups to group application-tier and database-tier VMs, then write NSG rules referencing the ASGs instead of individual IPs.
 
 
 Company wants to ensure that no team in any subscription can create an NSG rule that allows RDP (port 3389) inbound from the internet. They want to block this even if they have Owner permissions on their subscription. Which Azure Virtual Network Manager capability enforces this?
+
 -A security admin rule with action Always Deny on destination port 3389 from source Any applied to a network group covering all subscriptions.
 
 **While NSGs and ASGs control lateral movement within your network, Azure DDoS Protection provides defense against volumetric attacks from the internet. Consider enabling DDoS Protection to complement your network segmentation strategy.**
